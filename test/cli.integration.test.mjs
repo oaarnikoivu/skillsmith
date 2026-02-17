@@ -218,6 +218,70 @@ test("save-config persists provider/model from command flags", () => {
   assert.equal(saved.model, "gpt-5.2");
 });
 
+test("fails when protected operations are missing Authentication section", () => {
+  const invalidSkill = [
+    "# auth-one-op Skill",
+    "",
+    "## Operations",
+    "",
+    "### `list_secure_items`",
+    "Method: `GET`",
+    "Path: `/secure`",
+    "Auth scheme: `BearerAuth`",
+    "",
+    "Example request:",
+    "```bash",
+    'curl -H "Authorization: Bearer $API_TOKEN" "https://api.auth.example/secure"',
+    "```",
+  ].join("\n");
+
+  assert.throws(
+    () =>
+      runCli(
+        [
+          "generate",
+          "--input",
+          path.join("test", "fixtures", "auth-one-op.openapi.json"),
+          "--dry-run",
+        ],
+        { mockResponse: invalidSkill },
+      ),
+    /OUTPUT_MISSING_AUTHENTICATION_SECTION/,
+  );
+});
+
+test("passes when protected operations include Authentication section and scheme references", () => {
+  const validSkill = [
+    "# auth-one-op Skill",
+    "",
+    "## Authentication",
+    "",
+    "### `BearerAuth`",
+    "- Type: HTTP bearer token.",
+    "- Header: `Authorization: Bearer $API_TOKEN`",
+    "",
+    "## Operations",
+    "",
+    "### `list_secure_items`",
+    "Method: `GET`",
+    "Path: `/secure`",
+    "Auth: `BearerAuth`",
+    "",
+    "Example request:",
+    "```bash",
+    'curl -H "Authorization: Bearer $API_TOKEN" "https://api.auth.example/secure"',
+    "```",
+  ].join("\n");
+
+  const output = runCli(
+    ["generate", "--input", path.join("test", "fixtures", "auth-one-op.openapi.json"), "--dry-run"],
+    { mockResponse: validSkill },
+  );
+
+  assert.match(output, /## Authentication/);
+  assert.match(output, /### `BearerAuth`/);
+});
+
 test("generates expected markdown for one-op fixture", async () => {
   const mockResponse = readFileSync(
     path.join(repoRoot, "test", "golden", "one-op.SKILL.md"),

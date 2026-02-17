@@ -1,9 +1,14 @@
 import type {
   HttpMethod,
   OperationIR,
+  OperationAuthIR,
   ParameterIR,
   RequestBodyIR,
   ResponseIR,
+  SecurityFlowIR,
+  SecurityRequirementSetIR,
+  SecuritySchemeIR,
+  SecuritySchemeType,
   SpecIR,
 } from "@/ir/ir-types";
 import type { JsonObject, NormalizedOpenApiDocumentEnvelope } from "@/types";
@@ -329,10 +334,177 @@ function normalizeComponentSchemas(document: JsonObject): Record<string, unknown
   return result;
 }
 
+function normalizeSecuritySchemeType(value: unknown): SecuritySchemeType {
+  const candidate = asNonEmptyString(value);
+  if (
+    candidate === "apiKey" ||
+    candidate === "http" ||
+    candidate === "oauth2" ||
+    candidate === "openIdConnect" ||
+    candidate === "mutualTLS"
+  ) {
+    return candidate;
+  }
+
+  return "unknown";
+}
+
+function normalizeScopes(scopesNode: unknown): string[] {
+  if (!isJsonObject(scopesNode)) {
+    return [];
+  }
+
+  return Object.keys(scopesNode)
+    .map((scope) => scope.trim())
+    .filter((scope) => scope.length > 0)
+    .sort((left, right) => left.localeCompare(right));
+}
+
+function normalizeOauthFlows(flowsNode: unknown): SecurityFlowIR[] | undefined {
+  if (!isJsonObject(flowsNode)) {
+    return undefined;
+  }
+
+  const flows = Object.entries(flowsNode)
+    .filter(([, flowNode]) => isJsonObject(flowNode))
+    .map(([flowName, flowNode]) => {
+      const flow = flowNode as JsonObject;
+      return {
+        flow: flowName,
+        authorizationUrl: asNonEmptyString(flow.authorizationUrl),
+        tokenUrl: asNonEmptyString(flow.tokenUrl),
+        refreshUrl: asNonEmptyString(flow.refreshUrl),
+        scopes: normalizeScopes(flow.scopes),
+      } satisfies SecurityFlowIR;
+    })
+    .sort((left, right) => left.flow.localeCompare(right.flow));
+
+  return flows.length > 0 ? flows : undefined;
+}
+
+function normalizeSecuritySchemes(document: JsonObject): Record<string, SecuritySchemeIR> {
+  const componentsNode = isJsonObject(document.components) ? document.components : {};
+  const securitySchemesNode = isJsonObject(componentsNode.securitySchemes)
+    ? componentsNode.securitySchemes
+    : {};
+
+  const result: Record<string, SecuritySchemeIR> = {};
+  const entries = Object.entries(securitySchemesNode).sort(([left], [right]) =>
+    left.localeCompare(right),
+  );
+
+  for (const [schemeName, schemeCandidate] of entries) {
+    if (!isJsonObject(schemeCandidate)) {
+      continue;
+    }
+
+    const schemeType = normalizeSecuritySchemeType(schemeCandidate.type);
+    const normalized: SecuritySchemeIR = {
+      name: schemeName,
+      type: schemeType,
+      description: asNonEmptyString(schemeCandidate.description),
+    };
+
+    if (schemeType === "apiKey") {
+      const inValue = asNonEmptyString(schemeCandidate.in);
+      if (inValue === "query" || inValue === "header" || inValue === "cookie") {
+        normalized.in = inValue;
+      }
+      normalized.parameterName = asNonEmptyString(schemeCandidate.name);
+    } else if (schemeType === "http") {
+      normalized.httpScheme = asNonEmptyString(schemeCandidate.scheme);
+      normalized.bearerFormat = asNonEmptyString(schemeCandidate.bearerFormat);
+    } else if (schemeType === "oauth2") {
+      normalized.oauthFlows = normalizeOauthFlows(schemeCandidate.flows);
+    } else if (schemeType === "openIdConnect") {
+      normalized.openIdConnectUrl = asNonEmptyString(schemeCandidate.openIdConnectUrl);
+    }
+
+    result[schemeName] = normalized;
+  }
+
+  return result;
+}
+
+function normalizeSecurityRequirementSet(
+  requirementNode: unknown,
+): SecurityRequirementSetIR | undefined {
+  if (!isJsonObject(requirementNode)) {
+    return undefined;
+  }
+
+  const schemes = Object.entries(requirementNode)
+    .map(([schemeName, scopesNode]) => ({
+      schemeName,
+      scopes: Array.isArray(scopesNode)
+        ? scopesNode
+            .map((scope) => asNonEmptyString(scope))
+            .filter((scope): scope is string => scope !== undefined)
+            .sort((left, right) => left.localeCompare(right))
+        : [],
+    }))
+    .filter((scheme) => scheme.schemeName.trim().length > 0)
+    .sort((left, right) => left.schemeName.localeCompare(right.schemeName));
+
+  if (schemes.length === 0) {
+    return undefined;
+  }
+
+  return { schemes };
+}
+
+function normalizeOperationAuth(
+  operationNode: JsonObject,
+  globalSecurityNode: unknown,
+): OperationAuthIR | undefined {
+  const hasOperationSecurity = "security" in operationNode;
+  const effectiveSecurityNode = hasOperationSecurity ? operationNode.security : globalSecurityNode;
+  if (!Array.isArray(effectiveSecurityNode)) {
+    return undefined;
+  }
+
+  let optional = false;
+  const requirementSets: SecurityRequirementSetIR[] = [];
+  const seen = new Set<string>();
+
+  for (const requirementNode of effectiveSecurityNode) {
+    if (!isJsonObject(requirementNode)) {
+      continue;
+    }
+
+    if (Object.keys(requirementNode).length === 0) {
+      optional = true;
+      continue;
+    }
+
+    const requirementSet = normalizeSecurityRequirementSet(requirementNode);
+    if (!requirementSet) {
+      continue;
+    }
+
+    const dedupeKey = JSON.stringify(requirementSet);
+    if (!seen.has(dedupeKey)) {
+      seen.add(dedupeKey);
+      requirementSets.push(requirementSet);
+    }
+  }
+
+  if (requirementSets.length === 0 && !optional) {
+    return undefined;
+  }
+
+  return {
+    inherited: !hasOperationSecurity,
+    optional,
+    requirementSets,
+  };
+}
+
 export function buildIR({ document }: NormalizedOpenApiDocumentEnvelope): SpecIR {
   const info = isJsonObject(document.info) ? document.info : {};
   const paths = isJsonObject(document.paths) ? document.paths : {};
   const serversNode = Array.isArray(document.servers) ? document.servers : [];
+  const globalSecurityNode = document.security;
 
   const title = asNonEmptyString(info.title) ?? "Untitled API";
   const version = asNonEmptyString(info.version) ?? "0.0.0";
@@ -367,6 +539,7 @@ export function buildIR({ document }: NormalizedOpenApiDocumentEnvelope): SpecIR
         method: methodValue,
         path,
         tags: normalizeTags(operationCandidate.tags),
+        auth: normalizeOperationAuth(operationCandidate, globalSecurityNode),
         parameters,
         requestBody: normalizeRequestBody(operationCandidate.requestBody),
         responses: normalizeResponses(operationCandidate.responses),
@@ -380,6 +553,7 @@ export function buildIR({ document }: NormalizedOpenApiDocumentEnvelope): SpecIR
     title,
     version,
     servers,
+    securitySchemes: normalizeSecuritySchemes(document),
     operations,
     schemas: normalizeComponentSchemas(document),
   };

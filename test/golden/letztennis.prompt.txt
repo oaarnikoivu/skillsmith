@@ -6,6 +6,7 @@ Requirements:
 - Keep every operation from the IR in the final markdown.
 - Keep operation IDs exactly as provided.
 - For each operation, include method, path, parameters, and responses.
+- If operations require authentication, include explicit authentication guidance both globally and per operation.
 - Use schema definitions in `schemas` from the IR when describing request/response bodies.
 - Include a "## Schemas" section that documents concrete field-level shapes for relevant schemas.
 - Preserve enum values, required flags, and defaults.
@@ -14,6 +15,7 @@ Requirements:
 Output contract (must follow exactly):
 - Return markdown only.
 - Include a top-level "## Operations" section exactly with that heading.
+- If no operation requires authentication, omit the "## Authentication" section.
 - Include a top-level "## Schemas" section with concrete schema shapes from `schemas` in the IR.
 - Under it, include one section per operation with the exact heading format shown below.
 - Do not rename operation IDs.
@@ -26,6 +28,9 @@ Required operation headings:
 ### `search_slot_group_slots_search_group_get`
 ### `search_slot_groups_slots_search_groups_get`
 ### `list_tournaments_tournaments_get`
+
+Required authentication scheme headings (inside ## Authentication):
+(none)
 
 Operation-specific requirements:
 - Operation heading must be exactly: ### `list_clubs_clubs_get`
@@ -60,6 +65,7 @@ API IR (JSON):
   "servers": [
     "https://api.letztennis.example"
   ],
+  "securitySchemes": {},
   "operations": [
     {
       "id": "list_clubs_clubs_get",

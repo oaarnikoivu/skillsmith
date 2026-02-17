@@ -83,6 +83,20 @@ function sectionHasExampleRequest(sectionText: string): boolean {
   return examplePattern.test(sectionText);
 }
 
+function sectionContainsIdentifier(sectionText: string, identifier: string): boolean {
+  if (sectionText.includes(`\`${identifier}\``)) {
+    return true;
+  }
+
+  return new RegExp(`\\b${escapeRegex(identifier)}\\b`, "i").test(sectionText);
+}
+
+function sectionHasAuthenticationLanguage(sectionText: string): boolean {
+  return /\b(auth|authentication|authorization|token|bearer|basic|cookie|api[-_ ]?key)\b/i.test(
+    sectionText,
+  );
+}
+
 function schemasSection(markdown: string): string | undefined {
   const schemasHeadingMatch = /^##\s+Schemas\b.*$/gim.exec(markdown);
   if (!schemasHeadingMatch) {
@@ -90,6 +104,23 @@ function schemasSection(markdown: string): string | undefined {
   }
 
   const sectionStart = schemasHeadingMatch.index ?? 0;
+  const rest = markdown.slice(sectionStart);
+  const nextTopLevelHeadingMatch = /\n##\s+/.exec(rest.slice(1));
+  if (!nextTopLevelHeadingMatch) {
+    return rest;
+  }
+
+  const sectionEnd = sectionStart + 1 + nextTopLevelHeadingMatch.index;
+  return markdown.slice(sectionStart, sectionEnd);
+}
+
+function authenticationSection(markdown: string): string | undefined {
+  const authenticationHeadingMatch = /^##\s+Authentication\b.*$/gim.exec(markdown);
+  if (!authenticationHeadingMatch) {
+    return undefined;
+  }
+
+  const sectionStart = authenticationHeadingMatch.index ?? 0;
   const rest = markdown.slice(sectionStart);
   const nextTopLevelHeadingMatch = /\n##\s+/.exec(rest.slice(1));
   if (!nextTopLevelHeadingMatch) {
@@ -137,6 +168,25 @@ function documentedSchemasInSection(
     const schemaMatches = extractSchemaNamesFromHeading(headingText, schemaNameSet);
     for (const schemaName of schemaMatches) {
       documented.add(schemaName);
+    }
+  }
+
+  return documented;
+}
+
+function documentedAuthSchemesInSection(
+  sectionText: string,
+  schemeNames: readonly string[],
+): Set<string> {
+  const documented = new Set<string>();
+  const headingPattern = /^#{3,6}\s+(.+?)\s*$/gm;
+  const schemeNameSet = new Set(schemeNames);
+
+  for (const match of sectionText.matchAll(headingPattern)) {
+    const headingText = match[1] ?? "";
+    const extracted = extractSchemaNamesFromHeading(headingText, schemeNameSet);
+    for (const schemeName of extracted) {
+      documented.add(schemeName);
     }
   }
 
@@ -250,6 +300,15 @@ export function validateOutput(
 ): Diagnostic[] {
   const outputDiagnostics = [...diagnostics];
   const expectedOperationIds = specIR.operations.map((operation) => operation.id);
+  const requiredAuthSchemeNames = [
+    ...new Set(
+      specIR.operations.flatMap((operation) =>
+        (operation.auth?.requirementSets ?? []).flatMap((requirementSet) =>
+          requirementSet.schemes.map((scheme) => scheme.schemeName),
+        ),
+      ),
+    ),
+  ].sort((left, right) => left.localeCompare(right));
 
   if (markdown.trim().length === 0) {
     outputDiagnostics.push({
@@ -301,6 +360,61 @@ export function validateOutput(
         code: "OUTPUT_OPERATION_EXAMPLE_MISSING",
         message: `Operation "${operation.id}" is missing an example request.`,
       });
+    }
+
+    const operationAuthSchemeNames = [
+      ...new Set(
+        (operation.auth?.requirementSets ?? []).flatMap((requirementSet) =>
+          requirementSet.schemes.map((scheme) => scheme.schemeName),
+        ),
+      ),
+    ].sort((left, right) => left.localeCompare(right));
+    const hasOperationAuthRequirement =
+      operationAuthSchemeNames.length > 0 || operation.auth?.optional;
+    if (hasOperationAuthRequirement) {
+      if (!sectionHasAuthenticationLanguage(section) && operationAuthSchemeNames.length === 0) {
+        outputDiagnostics.push({
+          level: "error",
+          code: "OUTPUT_OPERATION_AUTH_MISSING",
+          message: `Operation "${operation.id}" is missing authentication guidance.`,
+        });
+      }
+
+      for (const schemeName of operationAuthSchemeNames) {
+        if (!sectionContainsIdentifier(section, schemeName)) {
+          outputDiagnostics.push({
+            level: "error",
+            code: "OUTPUT_OPERATION_AUTH_SCHEME_MISSING",
+            message: `Operation "${operation.id}" is missing authentication scheme "${schemeName}".`,
+          });
+        }
+      }
+    }
+  }
+
+  if (requiredAuthSchemeNames.length > 0) {
+    const sectionText = authenticationSection(markdown);
+    if (!sectionText) {
+      outputDiagnostics.push({
+        level: "error",
+        code: "OUTPUT_MISSING_AUTHENTICATION_SECTION",
+        message:
+          'Rendered markdown is missing an "Authentication" section for security-restricted operations.',
+      });
+    } else {
+      const documentedAuthSchemes = documentedAuthSchemesInSection(
+        sectionText,
+        requiredAuthSchemeNames,
+      );
+      for (const schemeName of requiredAuthSchemeNames) {
+        if (!documentedAuthSchemes.has(schemeName)) {
+          outputDiagnostics.push({
+            level: "error",
+            code: "OUTPUT_AUTH_SCHEME_MISSING",
+            message: `Authentication scheme "${schemeName}" is missing from the "Authentication" section.`,
+          });
+        }
+      }
     }
   }
 

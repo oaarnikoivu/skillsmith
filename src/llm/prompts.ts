@@ -9,16 +9,60 @@ function quoteList(values: string[]): string {
   return values.map((value) => `\`${value}\``).join(", ");
 }
 
+function authSchemeNames(specIR: SpecIR): string[] {
+  const names = new Set<string>();
+
+  for (const operation of specIR.operations) {
+    const requirementSets = operation.auth?.requirementSets ?? [];
+    for (const requirementSet of requirementSets) {
+      for (const scheme of requirementSet.schemes) {
+        names.add(scheme.schemeName);
+      }
+    }
+  }
+
+  return [...names].sort((left, right) => left.localeCompare(right));
+}
+
+function authRequirementLine(specIR: SpecIR, operationId: string): string | undefined {
+  const operation = specIR.operations.find((candidate) => candidate.id === operationId);
+  if (!operation?.auth) {
+    return undefined;
+  }
+
+  const requirementSets = operation.auth.requirementSets.map((set) =>
+    set.schemes
+      .map((scheme) =>
+        scheme.scopes.length > 0
+          ? `${scheme.schemeName} (scopes: ${scheme.scopes.join(", ")})`
+          : scheme.schemeName,
+      )
+      .join(" + "),
+  );
+  const alternatives =
+    requirementSets.length > 0
+      ? requirementSets.join(" OR ")
+      : operation.auth.optional
+        ? "optional authentication"
+        : "none";
+  const qualifier = operation.auth.optional ? "optional; accepted alternatives: " : "required: ";
+  return `${qualifier}${alternatives}`;
+}
+
 function operationRequirements(specIR: SpecIR): string {
   return specIR.operations
     .map((operation) => {
       const requiredParams = operation.parameters
         .filter((parameter) => parameter.required)
         .map((parameter) => parameter.name);
+      const authLine = authRequirementLine(specIR, operation.id);
       return [
         `- Operation heading must be exactly: ### \`${operation.id}\``,
         `  Method: ${operation.method}, Path: ${operation.path}`,
         `  Required parameters that must appear by name in this section: ${quoteList(requiredParams)}`,
+        ...(authLine
+          ? [`  Authentication details that must appear in this section: ${authLine}`]
+          : []),
         '  Must include an "Example request" subsection with a concrete HTTP call (for example, cURL).',
       ].join("\n");
     })
@@ -29,15 +73,23 @@ function outputContract(specIR: SpecIR): string {
   const operationIds = specIR.operations.map((operation) => operation.id);
   const operationHeadings = operationIds.map((operationId) => `### \`${operationId}\``).join("\n");
   const schemaNames = Object.keys(specIR.schemas);
+  const authNames = authSchemeNames(specIR);
   const schemaSectionRequirement =
     schemaNames.length > 0
       ? '- Include a top-level "## Schemas" section with concrete schema shapes from `schemas` in the IR.'
       : '- If no schemas are provided in the IR, omit the "## Schemas" section.';
+  const authSectionRequirement =
+    authNames.length > 0
+      ? '- Include a top-level "## Authentication" section with one subsection per referenced security scheme.'
+      : '- If no operation requires authentication, omit the "## Authentication" section.';
+  const authHeadings =
+    authNames.length > 0 ? authNames.map((name) => `### \`${name}\``).join("\n") : "(none)";
 
   return [
     "Output contract (must follow exactly):",
     "- Return markdown only.",
     '- Include a top-level "## Operations" section exactly with that heading.',
+    authSectionRequirement,
     schemaSectionRequirement,
     "- Under it, include one section per operation with the exact heading format shown below.",
     "- Do not rename operation IDs.",
@@ -45,6 +97,9 @@ function outputContract(specIR: SpecIR): string {
     "",
     "Required operation headings:",
     operationHeadings,
+    "",
+    "Required authentication scheme headings (inside ## Authentication):",
+    authHeadings,
   ].join("\n");
 }
 
@@ -83,6 +138,7 @@ export function buildSkillPrompt(specIR: SpecIR): string {
     "- Keep every operation from the IR in the final markdown.",
     "- Keep operation IDs exactly as provided.",
     "- For each operation, include method, path, parameters, and responses.",
+    "- If operations require authentication, include explicit authentication guidance both globally and per operation.",
     "- Use schema definitions in `schemas` from the IR when describing request/response bodies.",
     '- Include a "## Schemas" section that documents concrete field-level shapes for relevant schemas.',
     "- Preserve enum values, required flags, and defaults.",

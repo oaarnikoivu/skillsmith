@@ -125,7 +125,7 @@ Both commands run this preprocessing flow:
 2. Resolve/bundle `$ref` (local refs only; HTTP refs disabled).
 3. Normalize OpenAPI shapes used by the IR builder.
 4. Validate OpenAPI structure and emit diagnostics.
-5. Build IR (title/version/servers/operations/schemas).
+5. Build IR (title/version/servers/securitySchemes/operations/schemas).
 6. Apply optional overrides.
 7. Validate server URLs (must include at least one usable non-placeholder `http/https` URL, or use `--server-url`).
 
@@ -198,6 +198,13 @@ The validator enforces strict quality contracts.
 - Every expected operation appears.
 - Every required parameter appears in that operation section.
 - Every operation section includes an example request.
+- For protected operations, operation sections must include auth guidance and referenced scheme names.
+
+### Authentication checks
+
+- If any operation has OpenAPI security requirements, `## Authentication` section must exist.
+- All referenced security schemes must be documented under `## Authentication` (e.g. `### \`BearerAuth\``).
+- Security requirements are derived from OpenAPI `components.securitySchemes`, top-level `security`, and operation-level `security` overrides.
 
 ### Schema checks
 

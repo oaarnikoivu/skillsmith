@@ -234,6 +234,7 @@ export async function mergeOverrides(specIR: SpecIR, overridesPath?: string): Pr
     title: overrides.title ?? specIR.title,
     version: overrides.version ?? specIR.version,
     servers: overrides.servers ?? specIR.servers,
+    securitySchemes: specIR.securitySchemes,
     operations: specIR.operations.map((operation) =>
       applyOperationOverride(operation, overrides.operations?.[operation.id]),
     ),

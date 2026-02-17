@@ -2,6 +2,7 @@
   "title": "letztennis",
   "version": "0.1.0",
   "servers": ["https://api.letztennis.example"],
+  "securitySchemes": {},
   "operations": [
     {
       "id": "list_clubs_clubs_get",

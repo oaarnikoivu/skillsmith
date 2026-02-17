@@ -1,0 +1,39 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Auth One Op API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.auth.example"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/secure": {
+      "get": {
+        "operationId": "list_secure_items",
+        "summary": "List secure items",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
