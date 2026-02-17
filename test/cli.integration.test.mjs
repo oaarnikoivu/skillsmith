@@ -24,20 +24,20 @@ function runCli(args, options = {}) {
   } = options;
   const env = { ...process.env };
   env.DOTENV_CONFIG_PATH = testEnvPath;
-  env.OPENAPI_TO_SKILLMD_CONFIG_PATH =
+  env.SKILLSMITH_CONFIG_PATH =
     configPath ??
-    path.join(mkdtempSync(path.join(os.tmpdir(), "openapi-to-skillmd-config-")), "config.json");
+    path.join(mkdtempSync(path.join(os.tmpdir(), "skillsmith-config-")), "config.json");
 
   if (mockResponses === undefined) {
-    delete env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES;
+    delete env.SKILLSMITH_LLM_MOCK_RESPONSES;
   } else {
-    env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES = JSON.stringify(mockResponses);
+    env.SKILLSMITH_LLM_MOCK_RESPONSES = JSON.stringify(mockResponses);
   }
 
   if (mockResponse === undefined) {
-    delete env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE;
+    delete env.SKILLSMITH_LLM_MOCK_RESPONSE;
   } else {
-    env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE = mockResponse;
+    env.SKILLSMITH_LLM_MOCK_RESPONSE = mockResponse;
   }
 
   if (disableApiKey) {
@@ -107,7 +107,7 @@ test("fails when --model is missing", () => {
 
 test("uses cached provider/model when flags are omitted", () => {
   const configPath = path.join(
-    mkdtempSync(path.join(os.tmpdir(), "openapi-to-skillmd-config-")),
+    mkdtempSync(path.join(os.tmpdir(), "skillsmith-config-")),
     "config.json",
   );
   const mockResponse = readFileSync(
@@ -135,7 +135,7 @@ test("uses cached provider/model when flags are omitted", () => {
 
 test("config clear removes cached provider/model", () => {
   const configPath = path.join(
-    mkdtempSync(path.join(os.tmpdir(), "openapi-to-skillmd-config-")),
+    mkdtempSync(path.join(os.tmpdir(), "skillsmith-config-")),
     "config.json",
   );
 
@@ -166,7 +166,7 @@ test("config clear removes cached provider/model", () => {
 
 test("ignore-config bypasses cached provider/model", () => {
   const configPath = path.join(
-    mkdtempSync(path.join(os.tmpdir(), "openapi-to-skillmd-config-")),
+    mkdtempSync(path.join(os.tmpdir(), "skillsmith-config-")),
     "config.json",
   );
 
@@ -197,7 +197,7 @@ test("ignore-config bypasses cached provider/model", () => {
 
 test("save-config persists provider/model from command flags", () => {
   const configPath = path.join(
-    mkdtempSync(path.join(os.tmpdir(), "openapi-to-skillmd-config-")),
+    mkdtempSync(path.join(os.tmpdir(), "skillsmith-config-")),
     "config.json",
   );
   const mockResponse = readFileSync(
@@ -384,7 +384,7 @@ test("fails when rendered markdown includes value from configured secret env var
         {
           mockResponse: invalidSkill,
           extraEnv: {
-            OPENAPI_TO_SKILLMD_SECRET_ENV_NAMES: "DEMO_SECRET",
+            SKILLSMITH_SECRET_ENV_NAMES: "DEMO_SECRET",
             DEMO_SECRET: secretValue,
           },
         },
@@ -494,7 +494,7 @@ test("fails when operation example request is missing", () => {
 });
 
 test("does not write output file when validation errors are present", () => {
-  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "openapi-to-skillmd-"));
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "skillsmith-"));
   const outputPath = path.join(tmpDir, "SKILL.md");
   const invalidSkill = [
     "# demo Skill",
@@ -750,7 +750,7 @@ test("generate-segmented emits root and grouped files in dry-run", () => {
 });
 
 test("generate-segmented does not write files when root index validation fails", () => {
-  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "openapi-to-skillmd-segmented-"));
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "skillsmith-segmented-"));
   const outputDir = path.join(tmpDir, "skills");
   const tournamentsSkill = [
     "## Operations",

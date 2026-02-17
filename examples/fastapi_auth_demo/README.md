@@ -110,7 +110,7 @@ curl -H "Authorization: Bearer demo-oauth-token" \
   "http://127.0.0.1:8000/oauth/profile"
 ```
 
-## Use with openapi-to-skillmd
+## Use with skillsmith
 
 Example URL input:
 

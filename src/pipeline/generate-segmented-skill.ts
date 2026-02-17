@@ -92,7 +92,7 @@ function normalizeParallelism(value: number | undefined): number {
 }
 
 function envParallelism(): number | undefined {
-  const raw = process.env.OPENAPI_TO_SKILLMD_SEGMENT_PARALLELISM;
+  const raw = process.env.SKILLSMITH_SEGMENT_PARALLELISM;
   if (raw === undefined) {
     return undefined;
   }
@@ -186,9 +186,9 @@ export async function generateSegmentedSkill(
     throw new Error("LLM model id cannot be empty. Pass --model <id>.");
   }
   const apiKey = provider === "openai" ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY;
-  const hasOrderedMockResponses = process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES !== undefined;
+  const hasOrderedMockResponses = process.env.SKILLSMITH_LLM_MOCK_RESPONSES !== undefined;
   const hasMockResponse =
-    process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE !== undefined || hasOrderedMockResponses;
+    process.env.SKILLSMITH_LLM_MOCK_RESPONSE !== undefined || hasOrderedMockResponses;
   const apiKeyVarName = provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY";
   const baseUrl = provider === "openai" ? process.env.OPENAI_BASE_URL : undefined;
   const effectiveParallelism = hasOrderedMockResponses
@@ -197,7 +197,7 @@ export async function generateSegmentedSkill(
 
   if (!apiKey && !hasMockResponse) {
     throw new Error(
-      `${apiKeyVarName} is required (unless OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE or OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES is set). Deterministic rendering is disabled and LLM generation is mandatory.`,
+      `${apiKeyVarName} is required (unless SKILLSMITH_LLM_MOCK_RESPONSE or SKILLSMITH_LLM_MOCK_RESPONSES is set). Deterministic rendering is disabled and LLM generation is mandatory.`,
     );
   }
 

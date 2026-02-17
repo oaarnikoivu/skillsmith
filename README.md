@@ -1,4 +1,4 @@
-# openapi-to-skillmd
+# skillsmith
 
 Generate high-quality `SKILL.md` documentation from OpenAPI specs for autonomous agents.
 
@@ -11,7 +11,7 @@ This tool is intentionally **LLM-first** and **validation-driven**:
 
 ## What this tool does
 
-`openapi-to-skillmd` converts an OpenAPI document (`.json`, `.yaml`, `.yml`) into agent-oriented skill docs in two modes:
+`skillsmith` converts an OpenAPI document (`.json`, `.yaml`, `.yml`) into agent-oriented skill docs in two modes:
 
 1. `generate`
 
@@ -47,13 +47,13 @@ pnpm build
 If you install this CLI as an npm package (instead of cloning the repo), use:
 
 ```bash
-npm install -g openapi-to-skillmd
+npm install -g skillsmith
 ```
 
 Or run without global install:
 
 ```bash
-npx openapi-to-skillmd@latest --help
+npx skillsmith@latest --help
 ```
 
 ### API key setup (OPENAI)
@@ -111,8 +111,8 @@ The CLI auto-loads `.env` at startup.
 ### Quick verification
 
 ```bash
-openapi-to-skillmd config set --provider openai --model gpt-5.2
-openapi-to-skillmd generate --input path/to/openapi.json
+skillsmith config set --provider openai --model gpt-5.2
+skillsmith generate --input path/to/openapi.json
 ```
 
 ## Quick start
@@ -140,9 +140,9 @@ node dist/cli.js config set --provider openai --model gpt-5.2
 ### Root command
 
 ```bash
-openapi-to-skillmd generate --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [options]
-openapi-to-skillmd generate-segmented --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [options]
-openapi-to-skillmd config <set|get|clear> [options]
+skillsmith generate --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [options]
+skillsmith generate-segmented --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [options]
+skillsmith config <set|get|clear> [options]
 ```
 
 ### `generate` options
@@ -285,7 +285,7 @@ The validator enforces strict quality contracts.
 - Literal credentials in auth headers are blocked (for example `Authorization: Bearer <literal>` and `x-api-key: <literal>`).
 - Private key block patterns and common token formats are blocked.
 - Placeholder-style values are allowed (for example `$API_KEY`, `${API_KEY}`, `<TOKEN>`, `REDACTED`).
-- Optional exact-value env matching is available via `OPENAPI_TO_SKILLMD_SECRET_ENV_NAMES`.
+- Optional exact-value env matching is available via `SKILLSMITH_SECRET_ENV_NAMES`.
 
 ### Schema checks
 
@@ -343,17 +343,17 @@ You need the key matching the resolved provider unless a mock-response env var i
 
 User preference file location:
 
-- macOS/Linux: `~/.config/openapi-to-skillmd/config.json` (or `$XDG_CONFIG_HOME/openapi-to-skillmd/config.json`)
-- Windows: `%APPDATA%\openapi-to-skillmd\config.json`
+- macOS/Linux: `~/.config/skillsmith/config.json` (or `$XDG_CONFIG_HOME/skillsmith/config.json`)
+- Windows: `%APPDATA%\skillsmith\config.json`
 
 For tests/advanced setups, override path with:
 
-- `OPENAPI_TO_SKILLMD_CONFIG_PATH`
+- `SKILLSMITH_CONFIG_PATH`
 
 ### Provider config
 
 - `OPENAI_BASE_URL` (optional, OpenAI-compatible endpoint override)
-- `OPENAPI_TO_SKILLMD_SECRET_ENV_NAMES` (optional, comma-separated env var names whose values must never appear in generated markdown)
+- `SKILLSMITH_SECRET_ENV_NAMES` (optional, comma-separated env var names whose values must never appear in generated markdown)
 
 ## Agent Runtime Credentials (Important)
 
@@ -401,18 +401,18 @@ export SESSION_TOKEN=\"your_session_token\"
 
 ### Segmented parallelism
 
-- `OPENAPI_TO_SKILLMD_SEGMENT_PARALLELISM`
+- `SKILLSMITH_SEGMENT_PARALLELISM`
 - Used only if `--parallelism` is not provided.
 
 ### Test/dev LLM mocking
 
 1. Single-response mock:
 
-- `OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE`
+- `SKILLSMITH_LLM_MOCK_RESPONSE`
 
 2. Ordered multi-response mock (for multi-call flows like segmented generation):
 
-- `OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES`
+- `SKILLSMITH_LLM_MOCK_RESPONSES`
 - Must be a JSON array of strings.
 
 Important:

@@ -30,7 +30,7 @@ let cachedMockResponses: string[] = [];
 let cachedMockResponseIndex = 0;
 
 function nextMockResponse(): string | undefined {
-  const mockResponsesEnv = process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES;
+  const mockResponsesEnv = process.env.SKILLSMITH_LLM_MOCK_RESPONSES;
   if (mockResponsesEnv !== undefined) {
     if (mockResponsesEnv !== cachedMockResponsesEnv) {
       let parsed: unknown;
@@ -38,13 +38,13 @@ function nextMockResponse(): string | undefined {
         parsed = JSON.parse(mockResponsesEnv) as unknown;
       } catch (error) {
         throw new Error(
-          `OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES must be a JSON array of strings: ${error instanceof Error ? error.message : String(error)}`,
+          `SKILLSMITH_LLM_MOCK_RESPONSES must be a JSON array of strings: ${error instanceof Error ? error.message : String(error)}`,
           { cause: error },
         );
       }
 
       if (!Array.isArray(parsed) || parsed.some((item) => typeof item !== "string")) {
-        throw new Error("OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES must be a JSON array of strings.");
+        throw new Error("SKILLSMITH_LLM_MOCK_RESPONSES must be a JSON array of strings.");
       }
 
       cachedMockResponsesEnv = mockResponsesEnv;
@@ -54,7 +54,7 @@ function nextMockResponse(): string | undefined {
 
     if (cachedMockResponseIndex >= cachedMockResponses.length) {
       throw new Error(
-        "OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES did not provide enough responses for this run.",
+        "SKILLSMITH_LLM_MOCK_RESPONSES did not provide enough responses for this run.",
       );
     }
 
@@ -63,7 +63,7 @@ function nextMockResponse(): string | undefined {
     return response;
   }
 
-  const mockResponse = process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE;
+  const mockResponse = process.env.SKILLSMITH_LLM_MOCK_RESPONSE;
   if (typeof mockResponse === "string") {
     return mockResponse;
   }

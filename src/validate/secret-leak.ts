@@ -56,7 +56,7 @@ function extractFirstDefined(groups: readonly (string | undefined)[]): string | 
 }
 
 function envSecretNamesFromConfig(): string[] {
-  const raw = process.env.OPENAPI_TO_SKILLMD_SECRET_ENV_NAMES;
+  const raw = process.env.SKILLSMITH_SECRET_ENV_NAMES;
   if (!raw) {
     return [...DEFAULT_ENV_SECRET_NAMES];
   }

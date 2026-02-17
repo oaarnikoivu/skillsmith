@@ -123,8 +123,8 @@ type LogLevel = "success" | "warning" | "error";
 function emojiEnabled(stream: NodeJS.WriteStream): boolean {
   return (
     stream.isTTY &&
-    process.env.OPENAPI_TO_SKILLMD_PLAIN !== "1" &&
-    process.env.OPENAPI_TO_SKILLMD_NO_EMOJI !== "1"
+    process.env.SKILLSMITH_PLAIN !== "1" &&
+    process.env.SKILLSMITH_NO_EMOJI !== "1"
   );
 }
 
@@ -132,7 +132,7 @@ function colorEnabled(stream: NodeJS.WriteStream): boolean {
   return (
     stream.isTTY &&
     process.env.NO_COLOR === undefined &&
-    process.env.OPENAPI_TO_SKILLMD_PLAIN !== "1"
+    process.env.SKILLSMITH_PLAIN !== "1"
   );
 }
 
@@ -145,7 +145,7 @@ function style(stream: NodeJS.WriteStream, text: string, ...codes: string[]): st
 }
 
 function formatLevelLine(stream: NodeJS.WriteStream, level: LogLevel, message: string): string {
-  if (!stream.isTTY || process.env.OPENAPI_TO_SKILLMD_PLAIN === "1") {
+  if (!stream.isTTY || process.env.SKILLSMITH_PLAIN === "1") {
     return message;
   }
 
@@ -160,7 +160,7 @@ function formatLevelLine(stream: NodeJS.WriteStream, level: LogLevel, message: s
 class ProgressRenderer {
   private readonly interactive =
     process.stderr.isTTY &&
-    process.env.OPENAPI_TO_SKILLMD_PLAIN !== "1" &&
+    process.env.SKILLSMITH_PLAIN !== "1" &&
     process.env.TERM !== "dumb";
 
   private spinnerTimer: NodeJS.Timeout | undefined;
@@ -584,13 +584,13 @@ async function resolveLlmSelection(options: {
 
   if (!provider) {
     throw new Error(
-      "No LLM provider configured. Pass --provider or run `openapi-to-skillmd config set --provider <openai|anthropic> --model <id>`.",
+      "No LLM provider configured. Pass --provider or run `skillsmith config set --provider <openai|anthropic> --model <id>`.",
     );
   }
 
   if (!model || model.trim().length === 0) {
     throw new Error(
-      "No LLM model configured. Pass --model or run `openapi-to-skillmd config set --provider <openai|anthropic> --model <id>`.",
+      "No LLM model configured. Pass --model or run `skillsmith config set --provider <openai|anthropic> --model <id>`.",
     );
   }
 

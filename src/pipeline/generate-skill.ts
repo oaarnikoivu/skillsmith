@@ -66,14 +66,14 @@ export async function generateSkill(options: GenerateCommandOptions): Promise<Ge
   }
   const apiKey = provider === "openai" ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY;
   const hasMockResponse =
-    process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE !== undefined ||
-    process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES !== undefined;
+    process.env.SKILLSMITH_LLM_MOCK_RESPONSE !== undefined ||
+    process.env.SKILLSMITH_LLM_MOCK_RESPONSES !== undefined;
   const apiKeyVarName = provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY";
   const baseUrl = provider === "openai" ? process.env.OPENAI_BASE_URL : undefined;
 
   if (!apiKey && !hasMockResponse) {
     throw new Error(
-      `${apiKeyVarName} is required (unless OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE or OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES is set). Deterministic rendering is disabled and LLM generation is mandatory.`,
+      `${apiKeyVarName} is required (unless SKILLSMITH_LLM_MOCK_RESPONSE or SKILLSMITH_LLM_MOCK_RESPONSES is set). Deterministic rendering is disabled and LLM generation is mandatory.`,
     );
   }
 

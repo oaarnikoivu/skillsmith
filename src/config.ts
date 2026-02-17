@@ -1,1 +1,1 @@
-export const APP_NAME = "openapi-to-skillmd";
+export const APP_NAME = "skillsmith";

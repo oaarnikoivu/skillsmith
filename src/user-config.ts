@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import type { LlmProvider } from "@/types";
 
-const CONFIG_ENV_PATH = "OPENAPI_TO_SKILLMD_CONFIG_PATH";
+const CONFIG_ENV_PATH = "SKILLSMITH_CONFIG_PATH";
 
 export interface UserConfig {
   provider: LlmProvider;
@@ -14,18 +14,18 @@ function defaultConfigDir(): string {
   if (process.platform === "win32") {
     const appData = process.env.APPDATA;
     if (appData && appData.trim().length > 0) {
-      return join(appData, "openapi-to-skillmd");
+      return join(appData, "skillsmith");
     }
 
-    return join(homedir(), "AppData", "Roaming", "openapi-to-skillmd");
+    return join(homedir(), "AppData", "Roaming", "skillsmith");
   }
 
   const xdgConfigHome = process.env.XDG_CONFIG_HOME;
   if (xdgConfigHome && xdgConfigHome.trim().length > 0) {
-    return join(xdgConfigHome, "openapi-to-skillmd");
+    return join(xdgConfigHome, "skillsmith");
   }
 
-  return join(homedir(), ".config", "openapi-to-skillmd");
+  return join(homedir(), ".config", "skillsmith");
 }
 
 export function resolveUserConfigPath(): string {
