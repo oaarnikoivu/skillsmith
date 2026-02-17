@@ -49,6 +49,7 @@ Usage:
 Options:
   -i, --input <path>       Path to OpenAPI JSON or YAML file (required)
       --output-dir <path>  Output directory for segmented skill files (default: out/<api>-skills)
+      --parallelism <n>    Number of segments to generate concurrently (default: 3)
       --dry-run            Run generation without writing output files
       --overrides <path>   Optional path to overrides file
       --provider <name>    LLM provider: openai | anthropic
@@ -182,6 +183,7 @@ function parseGenerateArgs(argv: string[]): GenerateCommandOptions {
 function parseGenerateSegmentedArgs(argv: string[]): GenerateSegmentedCommandOptions {
   let inputPath: string | undefined;
   let outputDir: string | undefined;
+  let segmentParallelism: number | undefined;
   let overridesPath: string | undefined;
   let dryRun = false;
   let llmProvider: LlmProvider | undefined;
@@ -209,6 +211,19 @@ function parseGenerateSegmentedArgs(argv: string[]): GenerateSegmentedCommandOpt
           throw new Error("Missing value for --output-dir");
         }
         outputDir = value;
+        index += 1;
+        break;
+      }
+      case "--parallelism": {
+        const value = argv[index + 1];
+        if (!value) {
+          throw new Error("Missing value for --parallelism");
+        }
+        const parsed = Number.parseInt(value, 10);
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+          throw new Error(`Invalid --parallelism value: ${value}`);
+        }
+        segmentParallelism = parsed;
         index += 1;
         break;
       }
@@ -282,6 +297,7 @@ function parseGenerateSegmentedArgs(argv: string[]): GenerateSegmentedCommandOpt
   return {
     inputPath,
     outputDir,
+    segmentParallelism,
     dryRun,
     overridesPath,
     llmProvider,

@@ -65,6 +65,7 @@ Key options:
 - `--provider <name>`: provider selection (`openai` or `anthropic`).
 - `--model <id>`, `--temperature <n>`, `--max-output-tokens <n>`: LLM controls (`max-output-tokens` defaults to `6000`).
 - Segmented mode groups operations by first tag (if present), otherwise by top-level path segment.
+- `--parallelism <n>` controls concurrent segment generation in `generate-segmented` (default `3`).
 - Segmented default output directory: `out/<api>-skills`.
 - `OPENAI_API_KEY` is required for `openai` provider unless `OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE` is set.
 - `ANTHROPIC_API_KEY` is required for `anthropic` provider unless `OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE` is set.
@@ -92,6 +93,9 @@ node dist/cli.js generate-segmented --input spec.yaml
 
 # Generate segmented skills to a custom folder
 node dist/cli.js generate-segmented --input spec.yaml --output-dir out/my-api-skills
+
+# Generate segmented skills with higher concurrency
+node dist/cli.js generate-segmented --input spec.yaml --parallelism 5
 ```
 
 ## Overrides Format

@@ -28,6 +28,7 @@ export interface GenerateSkillResult {
 export interface GenerateSegmentedCommandOptions {
   inputPath: string;
   outputDir?: string;
+  segmentParallelism?: number;
   dryRun: boolean;
   overridesPath?: string;
   llmProvider?: LlmProvider;

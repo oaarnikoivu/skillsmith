@@ -23,6 +23,7 @@ import { validateIndexOutput } from "@/validate/validate-index-output";
 import { validateOutput } from "@/validate/validate-output";
 
 const MAX_REPAIR_ATTEMPTS = 3;
+const DEFAULT_SEGMENT_PARALLELISM = 3;
 
 function hasOutputErrors(diagnostics: Diagnostic[]): boolean {
   return diagnostics.some(
@@ -82,6 +83,52 @@ function coverageDiagnostics(
   return diagnostics;
 }
 
+function normalizeParallelism(value: number | undefined): number {
+  if (value === undefined || !Number.isInteger(value) || value <= 0) {
+    return DEFAULT_SEGMENT_PARALLELISM;
+  }
+  return value;
+}
+
+function envParallelism(): number | undefined {
+  const raw = process.env.OPENAPI_TO_SKILLMD_SEGMENT_PARALLELISM;
+  if (raw === undefined) {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return undefined;
+  }
+
+  return parsed;
+}
+
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const normalizedConcurrency = Math.max(1, Math.min(concurrency, items.length || 1));
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+
+  async function worker(): Promise<void> {
+    while (true) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= items.length) {
+        return;
+      }
+
+      results[index] = await mapper(items[index], index);
+    }
+  }
+
+  await Promise.all(Array.from({ length: normalizedConcurrency }, () => worker()));
+  return results;
+}
+
 export async function generateSegmentedSkill(
   options: GenerateSegmentedCommandOptions,
 ): Promise<GenerateSegmentedSkillResult> {
@@ -118,13 +165,16 @@ export async function generateSegmentedSkill(
 
   const provider = options.llmProvider ?? "openai";
   const apiKey = provider === "openai" ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY;
+  const hasOrderedMockResponses = process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES !== undefined;
   const hasMockResponse =
-    process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE !== undefined ||
-    process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES !== undefined;
+    process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE !== undefined || hasOrderedMockResponses;
   const apiKeyVarName = provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY";
   const defaultModel =
     provider === "openai" ? process.env.OPENAI_MODEL : process.env.ANTHROPIC_MODEL;
   const baseUrl = provider === "openai" ? process.env.OPENAI_BASE_URL : undefined;
+  const effectiveParallelism = hasOrderedMockResponses
+    ? 1
+    : normalizeParallelism(options.segmentParallelism ?? envParallelism());
 
   if (!apiKey && !hasMockResponse) {
     throw new Error(
@@ -145,45 +195,59 @@ export async function generateSegmentedSkill(
   const files: GenerateSegmentedSkillResult["files"] = [];
   const diagnostics: Diagnostic[] = [...validation.diagnostics];
 
-  for (const segment of outputSegments) {
-    const segmentSpecIR = toSegmentSpecIR(mergedSpecIR, segment);
-    progress(`Requesting draft for ${segment.filePath}`);
-    const prompt = buildSkillPrompt(segmentSpecIR);
-    const llmOutput = await generateDraftWithLlm({
-      ...llmRequestBase,
-      prompt,
-    });
-
-    let markdown = llmOutput.content.trim();
-    if (markdown.length === 0) {
-      throw new Error(`LLM returned an empty response while generating "${segment.filePath}".`);
-    }
-
-    progress(`Validating ${segment.filePath}`);
-    let segmentDiagnostics = validateOutput(markdown, segmentSpecIR, []);
-    let repairAttempt = 0;
-    while (hasOutputErrors(segmentDiagnostics) && repairAttempt < MAX_REPAIR_ATTEMPTS) {
-      repairAttempt += 1;
-      progress(`Repairing ${segment.filePath} (attempt ${repairAttempt}/${MAX_REPAIR_ATTEMPTS})`);
-      const repairPrompt = buildRepairPrompt(segmentSpecIR, markdown, segmentDiagnostics);
-      const repairedOutput = await generateDraftWithLlm({
+  progress(
+    `Generating ${outputSegments.length} segment files (parallelism: ${effectiveParallelism})`,
+  );
+  const segmentResults = await mapWithConcurrency(
+    outputSegments,
+    effectiveParallelism,
+    async (segment) => {
+      const segmentSpecIR = toSegmentSpecIR(mergedSpecIR, segment);
+      progress(`Requesting draft for ${segment.filePath}`);
+      const prompt = buildSkillPrompt(segmentSpecIR);
+      const llmOutput = await generateDraftWithLlm({
         ...llmRequestBase,
-        prompt: repairPrompt,
+        prompt,
       });
-      const repairedMarkdown = repairedOutput.content.trim();
-      if (repairedMarkdown.length === 0) {
-        throw new Error(`LLM returned an empty response while repairing "${segment.filePath}".`);
+
+      let markdown = llmOutput.content.trim();
+      if (markdown.length === 0) {
+        throw new Error(`LLM returned an empty response while generating "${segment.filePath}".`);
       }
 
-      markdown = repairedMarkdown;
-      segmentDiagnostics = validateOutput(markdown, segmentSpecIR, []);
-    }
+      progress(`Validating ${segment.filePath}`);
+      let segmentDiagnostics = validateOutput(markdown, segmentSpecIR, []);
+      let repairAttempt = 0;
+      while (hasOutputErrors(segmentDiagnostics) && repairAttempt < MAX_REPAIR_ATTEMPTS) {
+        repairAttempt += 1;
+        progress(`Repairing ${segment.filePath} (attempt ${repairAttempt}/${MAX_REPAIR_ATTEMPTS})`);
+        const repairPrompt = buildRepairPrompt(segmentSpecIR, markdown, segmentDiagnostics);
+        const repairedOutput = await generateDraftWithLlm({
+          ...llmRequestBase,
+          prompt: repairPrompt,
+        });
+        const repairedMarkdown = repairedOutput.content.trim();
+        if (repairedMarkdown.length === 0) {
+          throw new Error(`LLM returned an empty response while repairing "${segment.filePath}".`);
+        }
 
-    diagnostics.push(...qualifyDiagnostics(segment.filePath, segmentDiagnostics));
-    files.push({
-      path: segment.filePath,
-      markdown,
-    });
+        markdown = repairedMarkdown;
+        segmentDiagnostics = validateOutput(markdown, segmentSpecIR, []);
+      }
+
+      return {
+        file: {
+          path: segment.filePath,
+          markdown,
+        },
+        diagnostics: qualifyDiagnostics(segment.filePath, segmentDiagnostics),
+      };
+    },
+  );
+
+  for (const segmentResult of segmentResults) {
+    diagnostics.push(...segmentResult.diagnostics);
+    files.push(segmentResult.file);
   }
 
   const indexIR: SkillIndexIR = {
