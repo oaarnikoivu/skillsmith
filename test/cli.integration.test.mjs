@@ -16,9 +16,16 @@ function runCli(args, options = {}) {
     mockResponses,
     disableApiKey = false,
     serverUrl = "https://api.letztennis.com",
+    provider = "openai",
+    model = "gpt-5.2",
+    injectProviderAndModel = true,
+    configPath,
   } = options;
   const env = { ...process.env };
   env.DOTENV_CONFIG_PATH = testEnvPath;
+  env.OPENAPI_TO_SKILLMD_CONFIG_PATH =
+    configPath ??
+    path.join(mkdtempSync(path.join(os.tmpdir(), "openapi-to-skillmd-config-")), "config.json");
 
   if (mockResponses === undefined) {
     delete env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES;
@@ -37,8 +44,18 @@ function runCli(args, options = {}) {
   }
 
   const commandArgs = [...args];
-  if (serverUrl && !commandArgs.includes("--server-url")) {
+  const command = commandArgs[0];
+  const supportsGenerationServerUrl = command === "generate" || command === "generate-segmented";
+  if (supportsGenerationServerUrl && serverUrl && !commandArgs.includes("--server-url")) {
     commandArgs.push("--server-url", serverUrl);
+  }
+  if (supportsGenerationServerUrl && injectProviderAndModel) {
+    if (!commandArgs.includes("--provider")) {
+      commandArgs.push("--provider", provider);
+    }
+    if (!commandArgs.includes("--model")) {
+      commandArgs.push("--model", model);
+    }
   }
 
   return execFileSync("node", [path.join(repoRoot, "dist/cli.js"), ...commandArgs], {
@@ -47,6 +64,159 @@ function runCli(args, options = {}) {
     env,
   });
 }
+
+test("fails when --provider is missing", () => {
+  assert.throws(
+    () =>
+      runCli(
+        ["generate", "--input", path.join("test", "fixtures", "one-op.openapi.json"), "--dry-run"],
+        { injectProviderAndModel: false },
+      ),
+    /No LLM provider configured/,
+  );
+});
+
+test("fails when --model is missing", () => {
+  assert.throws(
+    () =>
+      runCli(
+        [
+          "generate",
+          "--input",
+          path.join("test", "fixtures", "one-op.openapi.json"),
+          "--provider",
+          "openai",
+          "--dry-run",
+        ],
+        { injectProviderAndModel: false },
+      ),
+    /No LLM model configured/,
+  );
+});
+
+test("uses cached provider/model when flags are omitted", () => {
+  const configPath = path.join(
+    mkdtempSync(path.join(os.tmpdir(), "openapi-to-skillmd-config-")),
+    "config.json",
+  );
+  const mockResponse = readFileSync(
+    path.join(repoRoot, "test", "golden", "one-op.SKILL.md"),
+    "utf8",
+  );
+
+  runCli(["config", "set", "--provider", "openai", "--model", "gpt-5.2"], {
+    injectProviderAndModel: false,
+    serverUrl: null,
+    configPath,
+  });
+
+  const output = runCli(
+    ["generate", "--input", path.join("test", "fixtures", "one-op.openapi.json"), "--dry-run"],
+    {
+      injectProviderAndModel: false,
+      configPath,
+      mockResponse,
+    },
+  );
+
+  assert.match(output, /### `create_club`/);
+});
+
+test("config clear removes cached provider/model", () => {
+  const configPath = path.join(
+    mkdtempSync(path.join(os.tmpdir(), "openapi-to-skillmd-config-")),
+    "config.json",
+  );
+
+  runCli(["config", "set", "--provider", "openai", "--model", "gpt-5.2"], {
+    injectProviderAndModel: false,
+    serverUrl: null,
+    configPath,
+  });
+
+  runCli(["config", "clear"], {
+    injectProviderAndModel: false,
+    serverUrl: null,
+    configPath,
+  });
+
+  assert.throws(
+    () =>
+      runCli(
+        ["generate", "--input", path.join("test", "fixtures", "one-op.openapi.json"), "--dry-run"],
+        {
+          injectProviderAndModel: false,
+          configPath,
+        },
+      ),
+    /No LLM provider configured/,
+  );
+});
+
+test("ignore-config bypasses cached provider/model", () => {
+  const configPath = path.join(
+    mkdtempSync(path.join(os.tmpdir(), "openapi-to-skillmd-config-")),
+    "config.json",
+  );
+
+  runCli(["config", "set", "--provider", "openai", "--model", "gpt-5.2"], {
+    injectProviderAndModel: false,
+    serverUrl: null,
+    configPath,
+  });
+
+  assert.throws(
+    () =>
+      runCli(
+        [
+          "generate",
+          "--input",
+          path.join("test", "fixtures", "one-op.openapi.json"),
+          "--dry-run",
+          "--ignore-config",
+        ],
+        {
+          injectProviderAndModel: false,
+          configPath,
+        },
+      ),
+    /No LLM provider configured/,
+  );
+});
+
+test("save-config persists provider/model from command flags", () => {
+  const configPath = path.join(
+    mkdtempSync(path.join(os.tmpdir(), "openapi-to-skillmd-config-")),
+    "config.json",
+  );
+  const mockResponse = readFileSync(
+    path.join(repoRoot, "test", "golden", "one-op.SKILL.md"),
+    "utf8",
+  );
+
+  runCli(
+    [
+      "generate",
+      "--input",
+      path.join("test", "fixtures", "one-op.openapi.json"),
+      "--dry-run",
+      "--provider",
+      "openai",
+      "--model",
+      "gpt-5.2",
+      "--save-config",
+    ],
+    {
+      injectProviderAndModel: false,
+      configPath,
+      mockResponse,
+    },
+  );
+
+  const saved = JSON.parse(readFileSync(configPath, "utf8"));
+  assert.equal(saved.provider, "openai");
+  assert.equal(saved.model, "gpt-5.2");
+});
 
 test("generates expected markdown for one-op fixture", async () => {
   const mockResponse = readFileSync(

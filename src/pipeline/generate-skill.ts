@@ -59,14 +59,16 @@ export async function generateSkill(options: GenerateCommandOptions): Promise<Ge
   }
   progress("Building LLM prompt");
   const prompt = buildSkillPrompt(mergedSpecIR);
-  const provider = options.llmProvider ?? "openai";
+  const provider = options.llmProvider;
+  const model = options.llmModel;
+  if (!model.trim()) {
+    throw new Error("LLM model id cannot be empty. Pass --model <id>.");
+  }
   const apiKey = provider === "openai" ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY;
   const hasMockResponse =
     process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE !== undefined ||
     process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES !== undefined;
   const apiKeyVarName = provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY";
-  const defaultModel =
-    provider === "openai" ? process.env.OPENAI_MODEL : process.env.ANTHROPIC_MODEL;
   const baseUrl = provider === "openai" ? process.env.OPENAI_BASE_URL : undefined;
 
   if (!apiKey && !hasMockResponse) {
@@ -78,7 +80,7 @@ export async function generateSkill(options: GenerateCommandOptions): Promise<Ge
   const llmRequestBase = {
     provider,
     system: "You are a technical writer creating precise SKILL.md docs for API agent tooling.",
-    model: options.llmModel ?? defaultModel,
+    model,
     temperature: options.llmTemperature,
     maxOutputTokens: options.llmMaxOutputTokens,
     apiKey,

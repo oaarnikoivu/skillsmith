@@ -12,9 +12,9 @@ if (process.env.AI_SDK_LOG_WARNINGS === undefined) {
 
 export interface LlmRequest {
   prompt: string;
-  provider?: LlmProvider;
+  provider: LlmProvider;
   system?: string;
-  model?: string;
+  model: string;
   temperature?: number;
   maxOutputTokens?: number;
   apiKey?: string;
@@ -91,9 +91,11 @@ export async function generateDraftWithLlm(request: LlmRequest): Promise<LlmResp
     throw new Error("LLM request prompt cannot be empty.");
   }
 
-  const providerName = request.provider ?? "openai";
-  const modelId =
-    request.model ?? (providerName === "openai" ? "gpt-4.1-mini" : "claude-3-5-sonnet-latest");
+  const providerName = request.provider;
+  const modelId = request.model.trim();
+  if (!modelId) {
+    throw new Error("LLM request model cannot be empty.");
+  }
   let model:
     | ReturnType<ReturnType<typeof createOpenAI>>
     | ReturnType<ReturnType<typeof createAnthropic>>;

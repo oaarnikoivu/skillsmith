@@ -180,14 +180,16 @@ export async function generateSegmentedSkill(
     filePath: `groups/${segment.fileName}`,
   }));
 
-  const provider = options.llmProvider ?? "openai";
+  const provider = options.llmProvider;
+  const model = options.llmModel;
+  if (!model.trim()) {
+    throw new Error("LLM model id cannot be empty. Pass --model <id>.");
+  }
   const apiKey = provider === "openai" ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY;
   const hasOrderedMockResponses = process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES !== undefined;
   const hasMockResponse =
     process.env.OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE !== undefined || hasOrderedMockResponses;
   const apiKeyVarName = provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY";
-  const defaultModel =
-    provider === "openai" ? process.env.OPENAI_MODEL : process.env.ANTHROPIC_MODEL;
   const baseUrl = provider === "openai" ? process.env.OPENAI_BASE_URL : undefined;
   const effectiveParallelism = hasOrderedMockResponses
     ? 1
@@ -202,7 +204,7 @@ export async function generateSegmentedSkill(
   const llmRequestBase = {
     provider,
     system: "You are a technical writer creating precise SKILL.md docs for API agent tooling.",
-    model: options.llmModel ?? defaultModel,
+    model,
     temperature: options.llmTemperature,
     maxOutputTokens: options.llmMaxOutputTokens,
     apiKey,

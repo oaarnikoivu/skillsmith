@@ -47,13 +47,19 @@ pnpm build
 Single file:
 
 ```bash
-node dist/cli.js generate --input path/to/openapi.json
+node dist/cli.js generate --input path/to/openapi.json --provider openai --model gpt-5.2
 ```
 
 Segmented output:
 
 ```bash
-node dist/cli.js generate-segmented --input path/to/openapi.json
+node dist/cli.js generate-segmented --input path/to/openapi.json --provider openai --model gpt-5.2
+```
+
+Or save your preferred provider/model once and omit them later:
+
+```bash
+node dist/cli.js config set --provider openai --model gpt-5.2
 ```
 
 ## CLI reference
@@ -61,8 +67,9 @@ node dist/cli.js generate-segmented --input path/to/openapi.json
 ### Root command
 
 ```bash
-openapi-to-skillmd generate --input <path> [options]
-openapi-to-skillmd generate-segmented --input <path> [options]
+openapi-to-skillmd generate --input <path> [--provider <openai|anthropic>] [--model <id>] [options]
+openapi-to-skillmd generate-segmented --input <path> [--provider <openai|anthropic>] [--model <id>] [options]
+openapi-to-skillmd config <set|get|clear> [options]
 ```
 
 ### `generate` options
@@ -73,8 +80,10 @@ openapi-to-skillmd generate-segmented --input <path> [options]
     --server-url <url>          Override/inject API base URL used in generated skills
     --dry-run                   Print markdown to stdout, do not write files
     --overrides <path>          Optional overrides YAML/JSON
-    --provider <openai|anthropic>
-    --model <id>
+    --provider <openai|anthropic>  LLM provider (overrides cached config)
+    --model <id>                   LLM model id (overrides cached config)
+    --ignore-config                Ignore cached provider/model
+    --save-config                  Save resolved provider/model to config
     --temperature <n>
     --max-output-tokens <n>     Default: 6000
 -h, --help
@@ -89,11 +98,21 @@ openapi-to-skillmd generate-segmented --input <path> [options]
     --parallelism <n>           Segment concurrency (default: 3)
     --dry-run                   Print all files to stdout with file markers
     --overrides <path>          Optional overrides YAML/JSON
-    --provider <openai|anthropic>
-    --model <id>
+    --provider <openai|anthropic>  LLM provider (overrides cached config)
+    --model <id>                   LLM model id (overrides cached config)
+    --ignore-config                Ignore cached provider/model
+    --save-config                  Save resolved provider/model to config
     --temperature <n>
     --max-output-tokens <n>     Default: 6000
 -h, --help
+```
+
+### `config` options
+
+```text
+config set --provider <openai|anthropic> --model <id>
+config get
+config clear
 ```
 
 ## How generation works (pipeline)
@@ -230,13 +249,22 @@ The CLI auto-loads `.env` on startup.
 - `OPENAI_API_KEY`
 - `ANTHROPIC_API_KEY`
 
-You need the key matching `--provider` unless a mock-response env var is used.
+You need the key matching the resolved provider unless a mock-response env var is used.
 
-### Optional model/provider config
+### User config path
 
-- `OPENAI_MODEL`
-- `OPENAI_BASE_URL`
-- `ANTHROPIC_MODEL`
+User preference file location:
+
+- macOS/Linux: `~/.config/openapi-to-skillmd/config.json` (or `$XDG_CONFIG_HOME/openapi-to-skillmd/config.json`)
+- Windows: `%APPDATA%\openapi-to-skillmd\config.json`
+
+For tests/advanced setups, override path with:
+
+- `OPENAPI_TO_SKILLMD_CONFIG_PATH`
+
+### Provider config
+
+- `OPENAI_BASE_URL` (optional, OpenAI-compatible endpoint override)
 
 ### Segmented parallelism
 
@@ -263,37 +291,55 @@ Important:
 ### Single file to default path
 
 ```bash
-node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com
+node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com --provider openai --model gpt-5.2
 ```
 
 ### Single file to custom path
 
 ```bash
-node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com --output out/my-skill.md
+node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com --provider openai --model gpt-5.2 --output out/my-skill.md
 ```
 
 ### Dry-run single file
 
 ```bash
-node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com --dry-run
+node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com --provider openai --model gpt-5.2 --dry-run
 ```
 
 ### Segmented generation to default dir
 
 ```bash
-node dist/cli.js generate-segmented --input spec.yaml --server-url https://api.yourdomain.com
+node dist/cli.js generate-segmented --input spec.yaml --server-url https://api.yourdomain.com --provider openai --model gpt-5.2
 ```
 
 ### Segmented generation with custom dir and higher concurrency
 
 ```bash
-node dist/cli.js generate-segmented --input spec.yaml --server-url https://api.yourdomain.com --output-dir out/my-api-skills --parallelism 5
+node dist/cli.js generate-segmented --input spec.yaml --server-url https://api.yourdomain.com --provider openai --model gpt-5.2 --output-dir out/my-api-skills --parallelism 5
 ```
 
-### Provider/model override
+### Anthropic example
 
 ```bash
 node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com --provider anthropic --model claude-3-5-sonnet-latest
+```
+
+### Save provider/model once
+
+```bash
+node dist/cli.js config set --provider openai --model gpt-5.2
+```
+
+### Generate using saved provider/model
+
+```bash
+node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com
+```
+
+### Ignore saved config for one run
+
+```bash
+node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com --provider anthropic --model claude-3-5-sonnet-latest --ignore-config
 ```
 
 ## Overrides

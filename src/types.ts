@@ -14,8 +14,8 @@ export interface GenerateCommandOptions {
   serverUrl?: string;
   dryRun: boolean;
   overridesPath?: string;
-  llmProvider?: LlmProvider;
-  llmModel?: string;
+  llmProvider: LlmProvider;
+  llmModel: string;
   llmTemperature?: number;
   llmMaxOutputTokens?: number;
   onProgress?: (message: string) => void;
@@ -33,8 +33,8 @@ export interface GenerateSegmentedCommandOptions {
   segmentParallelism?: number;
   dryRun: boolean;
   overridesPath?: string;
-  llmProvider?: LlmProvider;
-  llmModel?: string;
+  llmProvider: LlmProvider;
+  llmModel: string;
   llmTemperature?: number;
   llmMaxOutputTokens?: number;
   onProgress?: (message: string) => void;
