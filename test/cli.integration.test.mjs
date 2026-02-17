@@ -20,6 +20,7 @@ function runCli(args, options = {}) {
     model = "gpt-5.2",
     injectProviderAndModel = true,
     configPath,
+    extraEnv,
   } = options;
   const env = { ...process.env };
   env.DOTENV_CONFIG_PATH = testEnvPath;
@@ -41,6 +42,16 @@ function runCli(args, options = {}) {
 
   if (disableApiKey) {
     delete env.OPENAI_API_KEY;
+  }
+
+  if (extraEnv && typeof extraEnv === "object") {
+    for (const [key, value] of Object.entries(extraEnv)) {
+      if (value === undefined) {
+        delete env[key];
+      } else {
+        env[key] = value;
+      }
+    }
   }
 
   const commandArgs = [...args];
@@ -280,6 +291,106 @@ test("passes when protected operations include Authentication section and scheme
 
   assert.match(output, /## Authentication/);
   assert.match(output, /### `BearerAuth`/);
+});
+
+test("fails when Authorization header includes a literal bearer token", () => {
+  const invalidSkill = [
+    "# auth-one-op Skill",
+    "",
+    "## Authentication",
+    "",
+    "### `BearerAuth`",
+    "- Header: `Authorization: Bearer real-bearer-token-1234567890`",
+    "",
+    "## Operations",
+    "",
+    "### `list_secure_items`",
+    "Method: `GET`",
+    "Path: `/secure`",
+    "Auth: `BearerAuth`",
+    "",
+    "Example request:",
+    "```bash",
+    'curl -H "Authorization: Bearer real-bearer-token-1234567890" "https://api.auth.example/secure"',
+    "```",
+  ].join("\n");
+
+  assert.throws(
+    () =>
+      runCli(
+        [
+          "generate",
+          "--input",
+          path.join("test", "fixtures", "auth-one-op.openapi.json"),
+          "--dry-run",
+        ],
+        { mockResponse: invalidSkill },
+      ),
+    /OUTPUT_SECRET_HEADER_LITERAL/,
+  );
+});
+
+test("fails when x-api-key header includes a literal secret value", () => {
+  const invalidSkill = [
+    "# demo Skill",
+    "",
+    "## Operations",
+    "",
+    "### `create_club`",
+    "Method: `POST`",
+    "Path: `/clubs`",
+    "Required parameter: `include_meta`",
+    "",
+    "Example request:",
+    "```bash",
+    'curl -X POST "https://api.example.com/clubs?include_meta=true" -H "x-api-key: literal-secret-api-key-123456" -H "content-type: application/json" -d \'{"name":"Club A"}\'',
+    "```",
+  ].join("\n");
+
+  assert.throws(
+    () =>
+      runCli(
+        ["generate", "--input", path.join("test", "fixtures", "one-op.openapi.json"), "--dry-run"],
+        { mockResponse: invalidSkill },
+      ),
+    /OUTPUT_SECRET_HEADER_LITERAL/,
+  );
+});
+
+test("fails when rendered markdown includes value from configured secret env var", () => {
+  const secretValue = "super-secret-value-123456789";
+  const invalidSkill = [
+    "# demo Skill",
+    "",
+    `Leaked secret: ${secretValue}`,
+    "",
+    "## Operations",
+    "",
+    "### `create_club`",
+    "Method: `POST`",
+    "Path: `/clubs`",
+    "Required parameter: `include_meta`",
+    "",
+    "Example request:",
+    "```bash",
+    'curl -X POST "https://api.example.com/clubs?include_meta=true" -H "x-api-key: $API_KEY" -H "content-type: application/json" -d \'{"name":"Club A"}\'',
+    "```",
+  ].join("\n");
+
+  assert.throws(
+    () =>
+      runCli(
+        ["generate", "--input", path.join("test", "fixtures", "one-op.openapi.json"), "--dry-run"],
+        {
+          mockResponse: invalidSkill,
+          extraEnv: {
+            OPENAPI_TO_SKILLMD_SECRET_ENV_NAMES: "DEMO_SECRET",
+            DEMO_SECRET: secretValue,
+          },
+        },
+      ),
+    /OUTPUT_SECRET_ENV_MATCH/,
+  );
 });
 
 test("generates expected markdown for one-op fixture", async () => {

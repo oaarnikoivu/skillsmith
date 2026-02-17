@@ -139,6 +139,8 @@ export function buildSkillPrompt(specIR: SpecIR): string {
     "- Keep operation IDs exactly as provided.",
     "- For each operation, include method, path, parameters, and responses.",
     "- If operations require authentication, include explicit authentication guidance both globally and per operation.",
+    "- Never include real credentials, tokens, API keys, passwords, or session values in output.",
+    "- In auth examples, always use placeholders like `$API_KEY`, `$BEARER_TOKEN`, `$API_USERNAME`, `$API_PASSWORD`, `$SESSION_TOKEN`.",
     "- Use schema definitions in `schemas` from the IR when describing request/response bodies.",
     '- Include a "## Schemas" section that documents concrete field-level shapes for relevant schemas.',
     "- Preserve enum values, required flags, and defaults.",

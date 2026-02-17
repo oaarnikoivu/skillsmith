@@ -24,3 +24,8 @@ yarn-error.log*
 .DS_Store
 .idea/
 .vscode/
+
+# python example artifacts
+examples/**/.venv/
+examples/**/__pycache__/
+examples/**/openapi.generated.json

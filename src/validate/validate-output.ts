@@ -1,5 +1,6 @@
 import type { Diagnostic } from "@/types";
 import type { SpecIR } from "@/ir/ir-types";
+import { validateNoSecretLeaks } from "@/validate/secret-leak";
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -443,6 +444,8 @@ export function validateOutput(
       }
     }
   }
+
+  outputDiagnostics.push(...validateNoSecretLeaks(markdown));
 
   return outputDiagnostics;
 }

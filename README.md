@@ -42,6 +42,79 @@ Build once before using `dist/cli.js`:
 pnpm build
 ```
 
+## npm package usage
+
+If you install this CLI as an npm package (instead of cloning the repo), use:
+
+```bash
+npm install -g openapi-to-skillmd
+```
+
+Or run without global install:
+
+```bash
+npx openapi-to-skillmd@latest --help
+```
+
+### API key setup (OPENAI)
+
+Set your key in your shell environment. Do not store secrets in git-tracked files.
+
+#### macOS / Linux (zsh or bash)
+
+Current terminal session only:
+
+```bash
+export OPENAI_API_KEY="your_openai_api_key_here"
+```
+
+Persist for future sessions (`~/.zshrc` or `~/.bashrc`):
+
+```bash
+echo 'export OPENAI_API_KEY="your_openai_api_key_here"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+#### Windows PowerShell
+
+Current terminal session only:
+
+```powershell
+$env:OPENAI_API_KEY = "your_openai_api_key_here"
+```
+
+Persist for your user:
+
+```powershell
+[Environment]::SetEnvironmentVariable("OPENAI_API_KEY", "your_openai_api_key_here", "User")
+```
+
+#### Windows Command Prompt (cmd.exe)
+
+Current terminal session only:
+
+```cmd
+set OPENAI_API_KEY=your_openai_api_key_here
+```
+
+Persist for your user:
+
+```cmd
+setx OPENAI_API_KEY "your_openai_api_key_here"
+```
+
+### Optional `.env` usage
+
+You can also place `OPENAI_API_KEY=...` in a `.env` file in your current working directory.
+The CLI auto-loads `.env` at startup.
+
+### Quick verification
+
+```bash
+openapi-to-skillmd config set --provider openai --model gpt-5.2
+openapi-to-skillmd generate --input path/to/openapi.json
+```
+
 ## Quick start
 
 Single file:
@@ -206,6 +279,14 @@ The validator enforces strict quality contracts.
 - All referenced security schemes must be documented under `## Authentication` (e.g. `### \`BearerAuth\``).
 - Security requirements are derived from OpenAPI `components.securitySchemes`, top-level `security`, and operation-level `security` overrides.
 
+### Secret leak checks
+
+- Generated markdown is scanned for likely secret/token patterns.
+- Literal credentials in auth headers are blocked (for example `Authorization: Bearer <literal>` and `x-api-key: <literal>`).
+- Private key block patterns and common token formats are blocked.
+- Placeholder-style values are allowed (for example `$API_KEY`, `${API_KEY}`, `<TOKEN>`, `REDACTED`).
+- Optional exact-value env matching is available via `OPENAPI_TO_SKILLMD_SECRET_ENV_NAMES`.
+
 ### Schema checks
 
 - If operations reference schemas, `## Schemas` section must exist.
@@ -272,6 +353,51 @@ For tests/advanced setups, override path with:
 ### Provider config
 
 - `OPENAI_BASE_URL` (optional, OpenAI-compatible endpoint override)
+- `OPENAPI_TO_SKILLMD_SECRET_ENV_NAMES` (optional, comma-separated env var names whose values must never appear in generated markdown)
+
+## Agent Runtime Credentials (Important)
+
+When generated skills describe API authentication (API key, bearer, basic auth, cookie, OAuth token), follow this rule:
+
+- Keep credentials out of `SKILL.md`.
+- Keep credentials out of prompts, logs, and git-tracked files.
+- Provide credentials at runtime via environment variables or a secret manager.
+
+### What to put in `SKILL.md`
+
+- Auth mechanism and header/cookie/query shape.
+- Placeholder names only, for example:
+  - `Authorization: Bearer $API_BEARER_TOKEN`
+  - `x-api-key: $API_KEY`
+  - basic auth with `$API_USERNAME` / `$API_PASSWORD`
+  - cookie value placeholder such as `$SESSION_TOKEN`
+
+### What users should do at runtime
+
+- Export secrets in the environment before running the agent/tooling.
+- Example (macOS/Linux):
+
+```bash
+export API_KEY=\"your_real_api_key\"
+export API_BEARER_TOKEN=\"your_real_bearer_token\"
+export API_USERNAME=\"your_username\"
+export API_PASSWORD=\"your_password\"
+export SESSION_TOKEN=\"your_session_token\"
+```
+
+- On Windows, set equivalent env vars in PowerShell or cmd.
+
+### Execution model
+
+- Agent decides _what request to make_.
+- A trusted runtime tool/wrapper injects credentials from env vars into headers/cookies.
+- Agent output should never reveal raw secret values.
+
+### Logging and safety
+
+- Redact auth headers/cookies/tokens in logs and traces.
+- Avoid printing full request headers if they include credentials.
+- Use least-privilege credentials and rotate them regularly.
 
 ### Segmented parallelism
 
