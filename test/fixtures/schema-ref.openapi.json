@@ -1,0 +1,52 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "schema-ref",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/clubs": {
+      "get": {
+        "operationId": "list_clubs",
+        "summary": "List clubs",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddressOut": {
+        "type": "object",
+        "required": ["city"],
+        "properties": {
+          "city": {
+            "type": "string"
+          }
+        }
+      },
+      "ClubOut": {
+        "type": "object",
+        "required": ["clubId", "address"],
+        "properties": {
+          "clubId": {
+            "type": "string"
+          },
+          "address": {
+            "$ref": "#/components/schemas/AddressOut"
+          }
+        }
+      }
+    }
+  }
+}

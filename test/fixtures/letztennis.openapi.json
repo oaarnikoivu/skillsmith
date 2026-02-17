@@ -1,0 +1,657 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "letztennis",
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.letztennis.example"
+    }
+  ],
+  "paths": {
+    "/clubs": {
+      "get": {
+        "summary": "List Clubs",
+        "operationId": "list_clubs_clubs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClubOut"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournaments": {
+      "get": {
+        "summary": "List Tournaments",
+        "operationId": "list_tournaments_tournaments_get",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start date (YYYY-MM-DD)."
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End date (YYYY-MM-DD)."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TournamentOut"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/slots/search": {
+      "get": {
+        "summary": "Search Slots",
+        "operationId": "search_slots_slots_search_get",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "club_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "court_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": ["indoor", "outdoor", "unknown"],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "group_mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["none", "club", "time", "time_club", "time_of_day", "time_of_day_club"],
+              "type": "string",
+              "default": "none"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 200
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotsSearchOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/slots/search/count": {
+      "get": {
+        "summary": "Count Slots",
+        "operationId": "count_slots_slots_search_count_get",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "group_mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["none", "club", "time", "time_club", "time_of_day", "time_of_day_club"],
+              "type": "string",
+              "default": "none"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotsSearchCountOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/slots/search/groups": {
+      "get": {
+        "summary": "Search Slot Groups",
+        "operationId": "search_slot_groups_slots_search_groups_get",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "group_mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["none", "club", "time", "time_club", "time_of_day", "time_of_day_club"],
+              "type": "string",
+              "default": "none"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SlotsGroupHeadersNoneOut"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SlotsGroupHeadersTimeOrClubOut"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SlotsGroupHeadersTimeOfDayOut"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SlotsGroupHeadersTimeClubOut"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SlotsGroupHeadersTimeOfDayClubOut"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/slots/search/group": {
+      "get": {
+        "summary": "Search Slot Group",
+        "operationId": "search_slot_group_slots_search_group_get",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "group_mode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": ["none", "club", "time", "time_club", "time_of_day", "time_of_day_club"],
+              "type": "string"
+            }
+          },
+          {
+            "name": "group_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subgroup_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotsSearchGroupOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ClubOut": {
+        "type": "object",
+        "required": ["clubId", "displayName"],
+        "properties": {
+          "clubId": { "type": "string" },
+          "displayName": { "type": "string" }
+        }
+      },
+      "TournamentOut": {
+        "type": "object",
+        "required": ["source", "sourceId", "name", "startDate", "endDate"],
+        "properties": {
+          "source": { "type": "string" },
+          "sourceId": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "location": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "ageBadges": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "startDate": { "type": "string", "format": "date" },
+          "endDate": { "type": "string", "format": "date" },
+          "url": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "required": ["loc", "msg", "type"],
+        "properties": {
+          "loc": {
+            "type": "array",
+            "items": {
+              "anyOf": [{ "type": "string" }, { "type": "integer" }]
+            }
+          },
+          "msg": { "type": "string" },
+          "type": { "type": "string" }
+        }
+      },
+      "HTTPValidationError": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ValidationError" }
+          }
+        }
+      },
+      "TimeBoundsOut": {
+        "type": "object",
+        "required": ["min", "max"],
+        "properties": {
+          "min": { "type": "integer" },
+          "max": { "type": "integer" }
+        }
+      },
+      "SlotOut": {
+        "type": "object",
+        "required": ["clubId", "clubDisplayName", "startsAt", "endsAt"],
+        "properties": {
+          "clubId": { "type": "string" },
+          "clubDisplayName": { "type": "string" },
+          "court": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "courtType": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["indoor", "outdoor", "unknown"]
+              },
+              { "type": "null" }
+            ]
+          },
+          "startsAt": { "type": "string", "format": "date-time" },
+          "endsAt": { "type": "string", "format": "date-time" },
+          "bookingUrl": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        }
+      },
+      "SlotsSearchCountOut": {
+        "type": "object",
+        "required": ["count"],
+        "properties": {
+          "count": { "type": "integer" }
+        }
+      },
+      "SlotsGroupHeaderOut": {
+        "type": "object",
+        "required": ["key", "label", "count"],
+        "properties": {
+          "key": { "type": "string" },
+          "label": { "type": "string" },
+          "count": { "type": "integer" }
+        }
+      },
+      "SlotsGroupHeaderWithChildrenOut": {
+        "type": "object",
+        "required": ["key", "label", "count", "children"],
+        "properties": {
+          "key": { "type": "string" },
+          "label": { "type": "string" },
+          "count": { "type": "integer" },
+          "children": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SlotsGroupHeaderOut" }
+          }
+        }
+      },
+      "SlotsGroupHeadersNoneOut": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+          "kind": { "type": "string", "const": "none" }
+        }
+      },
+      "SlotsGroupHeadersTimeOrClubOut": {
+        "type": "object",
+        "required": ["kind", "groups"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["time", "club"] },
+          "groups": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SlotsGroupHeaderOut" }
+          }
+        }
+      },
+      "SlotsGroupHeadersTimeOfDayOut": {
+        "type": "object",
+        "required": ["kind", "groups"],
+        "properties": {
+          "kind": { "type": "string", "const": "time_of_day" },
+          "groups": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SlotsGroupHeaderOut" }
+          }
+        }
+      },
+      "SlotsGroupHeadersTimeClubOut": {
+        "type": "object",
+        "required": ["kind", "groups"],
+        "properties": {
+          "kind": { "type": "string", "const": "time_club" },
+          "groups": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SlotsGroupHeaderWithChildrenOut" }
+          }
+        }
+      },
+      "SlotsGroupHeadersTimeOfDayClubOut": {
+        "type": "object",
+        "required": ["kind", "groups"],
+        "properties": {
+          "kind": { "type": "string", "const": "time_of_day_club" },
+          "groups": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SlotsGroupHeaderWithChildrenOut" }
+          }
+        }
+      },
+      "SlotsGroupNoneOut": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+          "kind": { "type": "string", "const": "none" }
+        }
+      },
+      "SlotsGroupTimeOrClubOut": {
+        "type": "object",
+        "required": ["kind", "groups"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["time", "club"] },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {}
+            }
+          }
+        }
+      },
+      "SlotsGroupTimeOfDayOut": {
+        "type": "object",
+        "required": ["kind", "groups"],
+        "properties": {
+          "kind": { "type": "string", "const": "time_of_day" },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {}
+            }
+          }
+        }
+      },
+      "SlotsGroupTimeClubOut": {
+        "type": "object",
+        "required": ["kind", "groups"],
+        "properties": {
+          "kind": { "type": "string", "const": "time_club" },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {}
+            }
+          }
+        }
+      },
+      "SlotsGroupTimeOfDayClubOut": {
+        "type": "object",
+        "required": ["kind", "groups"],
+        "properties": {
+          "kind": { "type": "string", "const": "time_of_day_club" },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {}
+            }
+          }
+        }
+      },
+      "SlotsSearchGroupOut": {
+        "type": "object",
+        "required": ["slots"],
+        "properties": {
+          "slots": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SlotOut" }
+          },
+          "nextOffset": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }]
+          }
+        }
+      },
+      "SlotsSearchOut": {
+        "type": "object",
+        "required": ["slots", "groupData"],
+        "properties": {
+          "timeBounds": {
+            "anyOf": [{ "$ref": "#/components/schemas/TimeBoundsOut" }, { "type": "null" }]
+          },
+          "slots": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SlotOut" }
+          },
+          "groupData": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/SlotsGroupNoneOut" },
+              { "$ref": "#/components/schemas/SlotsGroupTimeOrClubOut" },
+              { "$ref": "#/components/schemas/SlotsGroupTimeOfDayOut" },
+              { "$ref": "#/components/schemas/SlotsGroupTimeClubOut" },
+              { "$ref": "#/components/schemas/SlotsGroupTimeOfDayClubOut" }
+            ]
+          },
+          "nextOffset": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }]
+          }
+        }
+      }
+    }
+  }
+}
