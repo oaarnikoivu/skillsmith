@@ -11,43 +11,103 @@ function parseJson(content: string): unknown {
   return JSON.parse(content) as unknown;
 }
 
-function parseOpenApiContent(fileContent: string, inputPath: string): unknown {
-  const fileExtension = extname(inputPath).toLowerCase();
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
-  if (fileExtension === ".json") {
-    return parseJson(fileContent);
+function extensionHint(source: string): string {
+  if (isHttpUrl(source)) {
+    return extname(new URL(source).pathname).toLowerCase();
   }
 
-  if (fileExtension === ".yaml" || fileExtension === ".yml") {
-    return parseYaml(fileContent);
+  return extname(source).toLowerCase();
+}
+
+function parseOpenApiContent(
+  sourceContent: string,
+  sourcePath: string,
+  contentType?: string,
+): unknown {
+  const fileExtension = extensionHint(sourcePath);
+  const contentTypeLower = contentType?.toLowerCase();
+
+  if (contentTypeLower?.includes("json") || fileExtension === ".json") {
+    return parseJson(sourceContent);
+  }
+
+  if (
+    contentTypeLower?.includes("yaml") ||
+    contentTypeLower?.includes("yml") ||
+    fileExtension === ".yaml" ||
+    fileExtension === ".yml"
+  ) {
+    return parseYaml(sourceContent);
   }
 
   try {
-    return parseJson(fileContent);
+    return parseJson(sourceContent);
   } catch {
-    return parseYaml(fileContent);
+    return parseYaml(sourceContent);
   }
 }
 
 export async function loadSpec(inputPath: string): Promise<OpenApiDocumentEnvelope> {
-  const fileContent = await readFile(inputPath, "utf8");
+  const sourceIsUrl = isHttpUrl(inputPath);
+  let sourceContent: string;
+  let sourcePath: string;
+  let contentType: string | undefined;
+
+  if (sourceIsUrl) {
+    let response: Response;
+    try {
+      response = await fetch(inputPath, {
+        headers: {
+          accept: "application/json, application/yaml, text/yaml, */*",
+        },
+      });
+    } catch (error) {
+      throw new Error(
+        `Failed to fetch OpenAPI URL "${inputPath}": ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      );
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch OpenAPI URL "${inputPath}": HTTP ${response.status} ${response.statusText}`,
+      );
+    }
+
+    sourceContent = await response.text();
+    sourcePath = response.url || inputPath;
+    contentType = response.headers.get("content-type") ?? undefined;
+  } else {
+    sourceContent = await readFile(inputPath, "utf8");
+    sourcePath = resolve(inputPath);
+  }
+
   let parsed: unknown;
 
   try {
-    parsed = parseOpenApiContent(fileContent, inputPath);
+    parsed = parseOpenApiContent(sourceContent, sourcePath, contentType);
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to parse OpenAPI file "${inputPath}": ${reason}`, {
+    throw new Error(`Failed to parse OpenAPI source "${inputPath}": ${reason}`, {
       cause: error,
     });
   }
 
   if (!isJsonObject(parsed)) {
-    throw new Error(`OpenAPI file "${inputPath}" must contain a top-level object.`);
+    throw new Error(`OpenAPI source "${inputPath}" must contain a top-level object.`);
   }
 
   return {
-    sourcePath: resolve(inputPath),
+    sourcePath,
     document: parsed,
   };
 }

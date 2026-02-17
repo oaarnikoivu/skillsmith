@@ -47,18 +47,18 @@ const ROOT_USAGE = `
 ${APP_NAME} - Convert OpenAPI specs into SKILL.md files
 
 Usage:
-  ${APP_NAME} generate --input <path> [--provider <openai|anthropic>] [--model <id>] [--output <path>] [--dry-run] [--overrides <path>]
-  ${APP_NAME} generate-segmented --input <path> [--provider <openai|anthropic>] [--model <id>] [--output-dir <path>] [--dry-run] [--overrides <path>]
+  ${APP_NAME} generate --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [--output <path>] [--dry-run] [--overrides <path>]
+  ${APP_NAME} generate-segmented --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [--output-dir <path>] [--dry-run] [--overrides <path>]
   ${APP_NAME} config <set|get|clear> [options]
   ${APP_NAME} --help
 `;
 
 const GENERATE_USAGE = `
 Usage:
-  ${APP_NAME} generate --input <path> [--provider <openai|anthropic>] [--model <id>] [--output <path>] [--dry-run] [--overrides <path>]
+  ${APP_NAME} generate --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [--output <path>] [--dry-run] [--overrides <path>]
 
 Options:
-  -i, --input <path>       Path to OpenAPI JSON or YAML file (required)
+  -i, --input <path>       Path or URL to OpenAPI JSON/YAML source (required)
   -o, --output <path>      Output path for generated SKILL.md (default: out/SKILL.md)
       --server-url <url>   Override/inject API base URL for generated skills
       --dry-run            Run generation without writing output files
@@ -74,10 +74,10 @@ Options:
 
 const GENERATE_SEGMENTED_USAGE = `
 Usage:
-  ${APP_NAME} generate-segmented --input <path> [--provider <openai|anthropic>] [--model <id>] [--output-dir <path>] [--dry-run] [--overrides <path>]
+  ${APP_NAME} generate-segmented --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [--output-dir <path>] [--dry-run] [--overrides <path>]
 
 Options:
-  -i, --input <path>       Path to OpenAPI JSON or YAML file (required)
+  -i, --input <path>       Path or URL to OpenAPI JSON/YAML source (required)
       --output-dir <path>  Output directory for segmented skill files (default: out/<api>-skills)
       --server-url <url>   Override/inject API base URL for generated skills
       --parallelism <n>    Number of segments to generate concurrently (default: 3)

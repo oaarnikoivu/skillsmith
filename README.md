@@ -67,15 +67,15 @@ node dist/cli.js config set --provider openai --model gpt-5.2
 ### Root command
 
 ```bash
-openapi-to-skillmd generate --input <path> [--provider <openai|anthropic>] [--model <id>] [options]
-openapi-to-skillmd generate-segmented --input <path> [--provider <openai|anthropic>] [--model <id>] [options]
+openapi-to-skillmd generate --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [options]
+openapi-to-skillmd generate-segmented --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [options]
 openapi-to-skillmd config <set|get|clear> [options]
 ```
 
 ### `generate` options
 
 ```text
--i, --input <path>              Required OpenAPI input path
+-i, --input <path-or-url>       Required OpenAPI input source (local file path or http/https URL)
 -o, --output <path>             Output markdown path (default: out/SKILL.md)
     --server-url <url>          Override/inject API base URL used in generated skills
     --dry-run                   Print markdown to stdout, do not write files
@@ -92,7 +92,7 @@ openapi-to-skillmd config <set|get|clear> [options]
 ### `generate-segmented` options
 
 ```text
--i, --input <path>              Required OpenAPI input path
+-i, --input <path-or-url>       Required OpenAPI input source (local file path or http/https URL)
     --output-dir <path>         Output directory (default: out/<api>-skills)
     --server-url <url>          Override/inject API base URL used in generated skills
     --parallelism <n>           Segment concurrency (default: 3)
@@ -121,7 +121,7 @@ config clear
 
 Both commands run this preprocessing flow:
 
-1. Load spec from disk (`json`/`yaml`).
+1. Load spec from local path or URL (`json`/`yaml`).
 2. Resolve/bundle `$ref` (local refs only; HTTP refs disabled).
 3. Normalize OpenAPI shapes used by the IR builder.
 4. Validate OpenAPI structure and emit diagnostics.
@@ -299,6 +299,12 @@ Important:
 
 ```bash
 node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com --provider openai --model gpt-5.2
+```
+
+### Single file from URL input
+
+```bash
+node dist/cli.js generate --input https://127.0.0.1/openapi.json --provider openai --model gpt-5.2
 ```
 
 ### Single file to custom path
