@@ -68,6 +68,18 @@ skillsmith generate-segmented \
   --server-url https://api.example.com
 ```
 
+For larger APIs, increase token budget:
+
+```bash
+skillsmith generate \
+  --input ./openapi.json \
+  --type openapi \
+  --provider openai \
+  --model gpt-5.2 \
+  --server-url https://api.example.com \
+  --max-output-tokens 12000
+```
+
 Default outputs:
 
 ```text
@@ -97,6 +109,8 @@ Common options:
 - `--temperature <n>`
 - `--max-output-tokens <n>`
 
+Tip: if your API is large or generated output gets truncated, increase `--max-output-tokens` (for example `9000` to `16000`, depending on model limits).
+
 ### `generate-segmented`
 
 Create a routed skill directory with grouped files.
@@ -117,6 +131,8 @@ Common options:
 - `--dry-run`
 - `--temperature <n>`
 - `--max-output-tokens <n>`
+
+Tip: segmented mode also benefits from higher `--max-output-tokens` when segments still contain many operations/schemas.
 
 ### `config`
 
