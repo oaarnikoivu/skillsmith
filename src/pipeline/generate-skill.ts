@@ -69,7 +69,6 @@ export async function generateSkill(options: GenerateCommandOptions): Promise<Ge
     process.env.SKILLSMITH_LLM_MOCK_RESPONSE !== undefined ||
     process.env.SKILLSMITH_LLM_MOCK_RESPONSES !== undefined;
   const apiKeyVarName = provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY";
-  const baseUrl = provider === "openai" ? process.env.OPENAI_BASE_URL : undefined;
 
   if (!apiKey && !hasMockResponse) {
     throw new Error(
@@ -84,7 +83,6 @@ export async function generateSkill(options: GenerateCommandOptions): Promise<Ge
     temperature: options.llmTemperature,
     maxOutputTokens: options.llmMaxOutputTokens,
     apiKey,
-    baseUrl,
   };
 
   progress("Requesting initial draft from LLM");

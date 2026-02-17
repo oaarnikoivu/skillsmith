@@ -376,7 +376,6 @@ For tests/advanced setups, override path with:
 
 ### Provider config
 
-- `OPENAI_BASE_URL` (optional, OpenAI-compatible endpoint override)
 - `SKILLSMITH_SECRET_ENV_NAMES` (optional, comma-separated env var names whose values must never appear in generated markdown)
 
 ## Agent Runtime Credentials (Important)

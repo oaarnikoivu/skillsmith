@@ -190,7 +190,6 @@ export async function generateSegmentedSkill(
   const hasMockResponse =
     process.env.SKILLSMITH_LLM_MOCK_RESPONSE !== undefined || hasOrderedMockResponses;
   const apiKeyVarName = provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY";
-  const baseUrl = provider === "openai" ? process.env.OPENAI_BASE_URL : undefined;
   const effectiveParallelism = hasOrderedMockResponses
     ? 1
     : normalizeParallelism(options.segmentParallelism ?? envParallelism());
@@ -208,7 +207,6 @@ export async function generateSegmentedSkill(
     temperature: options.llmTemperature,
     maxOutputTokens: options.llmMaxOutputTokens,
     apiKey,
-    baseUrl,
   };
 
   const files: GenerateSegmentedSkillResult["files"] = [];

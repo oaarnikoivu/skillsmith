@@ -18,7 +18,6 @@ export interface LlmRequest {
   temperature?: number;
   maxOutputTokens?: number;
   apiKey?: string;
-  baseUrl?: string;
 }
 
 export interface LlmResponse {
@@ -103,7 +102,6 @@ export async function generateDraftWithLlm(request: LlmRequest): Promise<LlmResp
   if (providerName === "openai") {
     const provider = createOpenAI({
       apiKey: request.apiKey,
-      baseURL: request.baseUrl,
     });
     model = provider(modelId);
   } else {
