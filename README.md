@@ -47,20 +47,20 @@ pnpm build
 If you install this CLI as an npm package (instead of cloning the repo), use:
 
 ```bash
-npm install -g skillsmith
+npm install -g @aarnio/skillsmith
 ```
 
 Or run without global install:
 
 ```bash
-npx skillsmith@latest --help
+npx @aarnio/skillsmith@latest --help
 ```
 
 ## Publish to npm
 
 Before first publish:
 
-1. Ensure package name is available (`npm view skillsmith`).
+1. Ensure package name is available (`npm view @aarnio/skillsmith`).
 2. If unavailable, switch to a scoped name (for example `@your-scope/skillsmith`) in `package.json`.
 3. Login to npm: `npm login`.
 

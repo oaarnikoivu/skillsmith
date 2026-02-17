@@ -1,5 +1,5 @@
 {
-  "name": "skillsmith",
+  "name": "@aarnio/skillsmith",
   "version": "0.1.0",
   "description": "CLI for converting OpenAPI specs into SKILL.md files",
   "private": false,
