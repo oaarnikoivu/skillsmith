@@ -6,6 +6,7 @@ import { validateSpec } from "@/openapi/validate-spec";
 import { buildIR } from "@/ir/build-ir";
 import { mergeOverrides } from "@/overrides/merge-overrides";
 import { validateOutput } from "@/validate/validate-output";
+import { validateServerUrls } from "@/validate/validate-server-urls";
 import { buildRepairPrompt, buildSkillPrompt } from "@/llm/prompts";
 import { generateDraftWithLlm } from "@/llm/client";
 
@@ -40,7 +41,22 @@ export async function generateSkill(options: GenerateCommandOptions): Promise<Ge
   progress("Building intermediate representation (IR)");
   const specIR = buildIR(normalizedSpec);
   progress("Applying overrides");
-  const mergedSpecIR = await mergeOverrides(specIR, options.overridesPath);
+  let mergedSpecIR = await mergeOverrides(specIR, options.overridesPath);
+  if (options.serverUrl) {
+    mergedSpecIR = {
+      ...mergedSpecIR,
+      servers: [options.serverUrl],
+    };
+  }
+  progress("Validating server URLs");
+  const serverDiagnostics = validateServerUrls(mergedSpecIR);
+  const preGenerationDiagnostics = [...validation.diagnostics, ...serverDiagnostics];
+  if (serverDiagnostics.some((diagnostic) => diagnostic.level === "error")) {
+    return {
+      markdown: "",
+      diagnostics: preGenerationDiagnostics,
+    };
+  }
   progress("Building LLM prompt");
   const prompt = buildSkillPrompt(mergedSpecIR);
   const provider = options.llmProvider ?? "openai";
@@ -55,7 +71,7 @@ export async function generateSkill(options: GenerateCommandOptions): Promise<Ge
 
   if (!apiKey && !hasMockResponse) {
     throw new Error(
-      `${apiKeyVarName} is required (unless OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE is set). Deterministic rendering is disabled and LLM generation is mandatory.`,
+      `${apiKeyVarName} is required (unless OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE or OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES is set). Deterministic rendering is disabled and LLM generation is mandatory.`,
     );
   }
 
@@ -80,7 +96,7 @@ export async function generateSkill(options: GenerateCommandOptions): Promise<Ge
     throw new Error("LLM returned an empty response. Generation failed.");
   }
 
-  const diagnostics = [...validation.diagnostics];
+  const diagnostics = [...preGenerationDiagnostics];
   progress("Validating LLM output");
   let outputDiagnostics = validateOutput(markdown, mergedSpecIR, diagnostics);
 

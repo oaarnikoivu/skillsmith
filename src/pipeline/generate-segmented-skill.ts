@@ -21,6 +21,7 @@ import type {
 } from "@/types";
 import { validateIndexOutput } from "@/validate/validate-index-output";
 import { validateOutput } from "@/validate/validate-output";
+import { validateServerUrls } from "@/validate/validate-server-urls";
 
 const MAX_REPAIR_ATTEMPTS = 3;
 const DEFAULT_SEGMENT_PARALLELISM = 3;
@@ -155,7 +156,23 @@ export async function generateSegmentedSkill(
   progress("Building intermediate representation (IR)");
   const specIR = buildIR(normalizedSpec);
   progress("Applying overrides");
-  const mergedSpecIR = await mergeOverrides(specIR, options.overridesPath);
+  let mergedSpecIR = await mergeOverrides(specIR, options.overridesPath);
+  if (options.serverUrl) {
+    mergedSpecIR = {
+      ...mergedSpecIR,
+      servers: [options.serverUrl],
+    };
+  }
+  progress("Validating server URLs");
+  const serverDiagnostics = validateServerUrls(mergedSpecIR);
+  const preGenerationDiagnostics = [...validation.diagnostics, ...serverDiagnostics];
+  if (serverDiagnostics.some((diagnostic) => diagnostic.level === "error")) {
+    return {
+      files: [],
+      diagnostics: preGenerationDiagnostics,
+      defaultOutputDir: "out/segmented-skills",
+    };
+  }
   progress("Building segment plan");
   const segmentPlan = buildSegments(mergedSpecIR);
   const outputSegments = segmentPlan.segments.map((segment) => ({
@@ -178,7 +195,7 @@ export async function generateSegmentedSkill(
 
   if (!apiKey && !hasMockResponse) {
     throw new Error(
-      `${apiKeyVarName} is required (unless OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE is set). Deterministic rendering is disabled and LLM generation is mandatory.`,
+      `${apiKeyVarName} is required (unless OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSE or OPENAPI_TO_SKILLMD_LLM_MOCK_RESPONSES is set). Deterministic rendering is disabled and LLM generation is mandatory.`,
     );
   }
 
@@ -193,7 +210,7 @@ export async function generateSegmentedSkill(
   };
 
   const files: GenerateSegmentedSkillResult["files"] = [];
-  const diagnostics: Diagnostic[] = [...validation.diagnostics];
+  const diagnostics: Diagnostic[] = [...preGenerationDiagnostics];
 
   progress(
     `Generating ${outputSegments.length} segment files (parallelism: ${effectiveParallelism})`,

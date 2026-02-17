@@ -11,6 +11,7 @@ export interface Diagnostic {
 export interface GenerateCommandOptions {
   inputPath: string;
   outputPath?: string;
+  serverUrl?: string;
   dryRun: boolean;
   overridesPath?: string;
   llmProvider?: LlmProvider;
@@ -28,6 +29,7 @@ export interface GenerateSkillResult {
 export interface GenerateSegmentedCommandOptions {
   inputPath: string;
   outputDir?: string;
+  serverUrl?: string;
   segmentParallelism?: number;
   dryRun: boolean;
   overridesPath?: string;

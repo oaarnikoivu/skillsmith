@@ -33,6 +33,7 @@ Usage:
 Options:
   -i, --input <path>       Path to OpenAPI JSON or YAML file (required)
   -o, --output <path>      Output path for generated SKILL.md (default: out/SKILL.md)
+      --server-url <url>   Override/inject API base URL for generated skills
       --dry-run            Run generation without writing output files
       --overrides <path>   Optional path to overrides file
       --provider <name>    LLM provider: openai | anthropic
@@ -49,6 +50,7 @@ Usage:
 Options:
   -i, --input <path>       Path to OpenAPI JSON or YAML file (required)
       --output-dir <path>  Output directory for segmented skill files (default: out/<api>-skills)
+      --server-url <url>   Override/inject API base URL for generated skills
       --parallelism <n>    Number of segments to generate concurrently (default: 3)
       --dry-run            Run generation without writing output files
       --overrides <path>   Optional path to overrides file
@@ -70,6 +72,7 @@ function parseLlmProvider(value: string): LlmProvider {
 function parseGenerateArgs(argv: string[]): GenerateCommandOptions {
   let inputPath: string | undefined;
   let outputPath: string | undefined;
+  let serverUrl: string | undefined;
   let overridesPath: string | undefined;
   let dryRun = false;
   let llmProvider: LlmProvider | undefined;
@@ -98,6 +101,15 @@ function parseGenerateArgs(argv: string[]): GenerateCommandOptions {
           throw new Error("Missing value for --output");
         }
         outputPath = value;
+        index += 1;
+        break;
+      }
+      case "--server-url": {
+        const value = argv[index + 1];
+        if (!value) {
+          throw new Error("Missing value for --server-url");
+        }
+        serverUrl = value;
         index += 1;
         break;
       }
@@ -171,6 +183,7 @@ function parseGenerateArgs(argv: string[]): GenerateCommandOptions {
   return {
     inputPath,
     outputPath,
+    serverUrl,
     dryRun,
     overridesPath,
     llmProvider,
@@ -183,6 +196,7 @@ function parseGenerateArgs(argv: string[]): GenerateCommandOptions {
 function parseGenerateSegmentedArgs(argv: string[]): GenerateSegmentedCommandOptions {
   let inputPath: string | undefined;
   let outputDir: string | undefined;
+  let serverUrl: string | undefined;
   let segmentParallelism: number | undefined;
   let overridesPath: string | undefined;
   let dryRun = false;
@@ -211,6 +225,15 @@ function parseGenerateSegmentedArgs(argv: string[]): GenerateSegmentedCommandOpt
           throw new Error("Missing value for --output-dir");
         }
         outputDir = value;
+        index += 1;
+        break;
+      }
+      case "--server-url": {
+        const value = argv[index + 1];
+        if (!value) {
+          throw new Error("Missing value for --server-url");
+        }
+        serverUrl = value;
         index += 1;
         break;
       }
@@ -297,6 +320,7 @@ function parseGenerateSegmentedArgs(argv: string[]): GenerateSegmentedCommandOpt
   return {
     inputPath,
     outputDir,
+    serverUrl,
     segmentParallelism,
     dryRun,
     overridesPath,

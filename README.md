@@ -70,6 +70,7 @@ openapi-to-skillmd generate-segmented --input <path> [options]
 ```text
 -i, --input <path>              Required OpenAPI input path
 -o, --output <path>             Output markdown path (default: out/SKILL.md)
+    --server-url <url>          Override/inject API base URL used in generated skills
     --dry-run                   Print markdown to stdout, do not write files
     --overrides <path>          Optional overrides YAML/JSON
     --provider <openai|anthropic>
@@ -84,6 +85,7 @@ openapi-to-skillmd generate-segmented --input <path> [options]
 ```text
 -i, --input <path>              Required OpenAPI input path
     --output-dir <path>         Output directory (default: out/<api>-skills)
+    --server-url <url>          Override/inject API base URL used in generated skills
     --parallelism <n>           Segment concurrency (default: 3)
     --dry-run                   Print all files to stdout with file markers
     --overrides <path>          Optional overrides YAML/JSON
@@ -106,6 +108,7 @@ Both commands run this preprocessing flow:
 4. Validate OpenAPI structure and emit diagnostics.
 5. Build IR (title/version/servers/operations/schemas).
 6. Apply optional overrides.
+7. Validate server URLs (must include at least one usable non-placeholder `http/https` URL, or use `--server-url`).
 
 Then the LLM generation phase starts.
 
@@ -189,6 +192,12 @@ The validator enforces strict quality contracts.
 - Every expected segment file heading exists.
 - Segment entry mentions all operation IDs assigned to that file.
 
+### Server URL checks
+
+- At least one usable non-placeholder server URL must exist before generation.
+- Placeholder hosts such as `.example`, `.test`, `.invalid`, and localhost are rejected as usable base URLs.
+- If your spec is missing real servers (or uses placeholder domains), pass `--server-url https://your-real-host`.
+
 ### Write behavior
 
 If any `error` diagnostics remain after repair attempts, the CLI will not write output.
@@ -254,37 +263,37 @@ Important:
 ### Single file to default path
 
 ```bash
-node dist/cli.js generate --input spec.yaml
+node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com
 ```
 
 ### Single file to custom path
 
 ```bash
-node dist/cli.js generate --input spec.yaml --output out/my-skill.md
+node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com --output out/my-skill.md
 ```
 
 ### Dry-run single file
 
 ```bash
-node dist/cli.js generate --input spec.yaml --dry-run
+node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com --dry-run
 ```
 
 ### Segmented generation to default dir
 
 ```bash
-node dist/cli.js generate-segmented --input spec.yaml
+node dist/cli.js generate-segmented --input spec.yaml --server-url https://api.yourdomain.com
 ```
 
 ### Segmented generation with custom dir and higher concurrency
 
 ```bash
-node dist/cli.js generate-segmented --input spec.yaml --output-dir out/my-api-skills --parallelism 5
+node dist/cli.js generate-segmented --input spec.yaml --server-url https://api.yourdomain.com --output-dir out/my-api-skills --parallelism 5
 ```
 
 ### Provider/model override
 
 ```bash
-node dist/cli.js generate --input spec.yaml --provider anthropic --model claude-3-5-sonnet-latest
+node dist/cli.js generate --input spec.yaml --server-url https://api.yourdomain.com --provider anthropic --model claude-3-5-sonnet-latest
 ```
 
 ## Overrides
@@ -345,6 +354,14 @@ Check printed diagnostics and regenerate.
 
 Your generated `## Schemas` section is incomplete for referenced/transitive schemas.
 The tool is strict by design.
+
+### `SERVER_URL_REQUIRED`
+
+Your spec has no usable real server URL (or only placeholder/local URLs). Inject one:
+
+```bash
+--server-url https://api.yourdomain.com
+```
 
 ### Large specs still fail in single mode
 

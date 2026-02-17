@@ -11,7 +11,12 @@ const repoRoot = process.cwd();
 const testEnvPath = path.join(repoRoot, "test", "fixtures", "test.env");
 
 function runCli(args, options = {}) {
-  const { mockResponse, mockResponses, disableApiKey = false } = options;
+  const {
+    mockResponse,
+    mockResponses,
+    disableApiKey = false,
+    serverUrl = "https://api.letztennis.com",
+  } = options;
   const env = { ...process.env };
   env.DOTENV_CONFIG_PATH = testEnvPath;
 
@@ -31,7 +36,12 @@ function runCli(args, options = {}) {
     delete env.OPENAI_API_KEY;
   }
 
-  return execFileSync("node", [path.join(repoRoot, "dist/cli.js"), ...args], {
+  const commandArgs = [...args];
+  if (serverUrl && !commandArgs.includes("--server-url")) {
+    commandArgs.push("--server-url", serverUrl);
+  }
+
+  return execFileSync("node", [path.join(repoRoot, "dist/cli.js"), ...commandArgs], {
     cwd: repoRoot,
     encoding: "utf8",
     env,
@@ -65,6 +75,17 @@ test("includes warning diagnostics when OpenAPI paths are empty", () => {
 
   assert.match(output, /WARNING: \[OPENAPI_EMPTY_PATHS]/);
   assert.match(output, /# demo Skill/);
+});
+
+test("fails when no usable server URL is available and none is injected", () => {
+  assert.throws(
+    () =>
+      runCli(
+        ["generate", "--input", path.join("test", "fixtures", "one-op.openapi.json"), "--dry-run"],
+        { serverUrl: null },
+      ),
+    /SERVER_URL_REQUIRED/,
+  );
 });
 
 test("fails when no LLM API key is set and no mock response is provided", () => {
