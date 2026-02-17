@@ -56,6 +56,26 @@ Or run without global install:
 npx skillsmith@latest --help
 ```
 
+## Publish to npm
+
+Before first publish:
+
+1. Ensure package name is available (`npm view skillsmith`).
+2. If unavailable, switch to a scoped name (for example `@your-scope/skillsmith`) in `package.json`.
+3. Login to npm: `npm login`.
+
+Release flow:
+
+1. Bump version in `package.json` (or use `npm version patch|minor|major`).
+2. Validate package contents: `pnpm pack --dry-run`.
+3. Publish: `npm publish --access public`.
+
+Notes:
+
+- `prepack` runs `pnpm build`, so `dist/` is always generated before packing.
+- `prepublishOnly` runs lint + tests as a publish gate.
+- Published files are limited to `dist/`, `README.md`, and `LICENSE`.
+
 ### API key setup (OPENAI)
 
 Set your key in your shell environment. Do not store secrets in git-tracked files.
@@ -140,8 +160,8 @@ node dist/cli.js config set --provider openai --model gpt-5.2
 ### Root command
 
 ```bash
-skillsmith generate --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [options]
-skillsmith generate-segmented --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [options]
+skillsmith generate --input <path-or-url> [--type <openapi>|--input-type <openapi>] [--provider <openai|anthropic>] [--model <id>] [options]
+skillsmith generate-segmented --input <path-or-url> [--type <openapi>|--input-type <openapi>] [--provider <openai|anthropic>] [--model <id>] [options]
 skillsmith config <set|get|clear> [options]
 ```
 
@@ -149,6 +169,8 @@ skillsmith config <set|get|clear> [options]
 
 ```text
 -i, --input <path-or-url>       Required OpenAPI input source (local file path or http/https URL)
+    --type <openapi>            Input type (default: openapi)
+    --input-type <openapi>      Alias for --type
 -o, --output <path>             Output markdown path (default: out/SKILL.md)
     --server-url <url>          Override/inject API base URL used in generated skills
     --dry-run                   Print markdown to stdout, do not write files
@@ -166,6 +188,8 @@ skillsmith config <set|get|clear> [options]
 
 ```text
 -i, --input <path-or-url>       Required OpenAPI input source (local file path or http/https URL)
+    --type <openapi>            Input type (default: openapi)
+    --input-type <openapi>      Alias for --type
     --output-dir <path>         Output directory (default: out/<api>-skills)
     --server-url <url>          Override/inject API base URL used in generated skills
     --parallelism <n>           Segment concurrency (default: 3)

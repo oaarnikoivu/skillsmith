@@ -1,6 +1,7 @@
 export type DiagnosticLevel = "info" | "warning" | "error";
 export type JsonObject = Record<string, unknown>;
 export type LlmProvider = "openai" | "anthropic";
+export type InputType = "openapi";
 
 export interface Diagnostic {
   level: DiagnosticLevel;
@@ -9,6 +10,7 @@ export interface Diagnostic {
 }
 
 export interface GenerateCommandOptions {
+  inputType: InputType;
   inputPath: string;
   outputPath?: string;
   serverUrl?: string;
@@ -27,6 +29,7 @@ export interface GenerateSkillResult {
 }
 
 export interface GenerateSegmentedCommandOptions {
+  inputType: InputType;
   inputPath: string;
   outputDir?: string;
   serverUrl?: string;

@@ -2,10 +2,15 @@
   "name": "skillsmith",
   "version": "0.1.0",
   "description": "CLI for converting OpenAPI specs into SKILL.md files",
-  "private": true,
+  "private": false,
   "bin": {
     "skillsmith": "dist/cli.js"
   },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "tsx src/cli.ts",
     "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json --resolve-full-paths --resolve-full-extension .js",
@@ -14,14 +19,27 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",
-    "format:check": "prettier . --check"
+    "format:check": "prettier . --check",
+    "prepack": "pnpm build",
+    "prepublishOnly": "pnpm lint && pnpm test"
   },
   "keywords": [
     "openapi",
     "cli",
     "skillmd"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oaarnikoivu/openapi-to-skillmd.git"
+  },
+  "bugs": {
+    "url": "https://github.com/oaarnikoivu/openapi-to-skillmd/issues"
+  },
+  "homepage": "https://github.com/oaarnikoivu/openapi-to-skillmd#readme",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "packageManager": "pnpm@10.11.0",
   "type": "module",
   "devDependencies": {

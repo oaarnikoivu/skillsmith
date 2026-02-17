@@ -17,6 +17,7 @@ import type {
   GenerateCommandOptions,
   GenerateSegmentedCommandOptions,
   GenerateSegmentedSkillResult,
+  InputType,
   LlmProvider,
 } from "@/types";
 
@@ -47,18 +48,20 @@ const ROOT_USAGE = `
 ${APP_NAME} - Convert OpenAPI specs into SKILL.md files
 
 Usage:
-  ${APP_NAME} generate --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [--output <path>] [--dry-run] [--overrides <path>]
-  ${APP_NAME} generate-segmented --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [--output-dir <path>] [--dry-run] [--overrides <path>]
+  ${APP_NAME} generate --input <path-or-url> [--type <openapi>|--input-type <openapi>] [--provider <openai|anthropic>] [--model <id>] [--output <path>] [--dry-run] [--overrides <path>]
+  ${APP_NAME} generate-segmented --input <path-or-url> [--type <openapi>|--input-type <openapi>] [--provider <openai|anthropic>] [--model <id>] [--output-dir <path>] [--dry-run] [--overrides <path>]
   ${APP_NAME} config <set|get|clear> [options]
   ${APP_NAME} --help
 `;
 
 const GENERATE_USAGE = `
 Usage:
-  ${APP_NAME} generate --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [--output <path>] [--dry-run] [--overrides <path>]
+  ${APP_NAME} generate --input <path-or-url> [--type <openapi>|--input-type <openapi>] [--provider <openai|anthropic>] [--model <id>] [--output <path>] [--dry-run] [--overrides <path>]
 
 Options:
   -i, --input <path>       Path or URL to OpenAPI JSON/YAML source (required)
+      --type <type>        Input type: openapi (default: openapi)
+      --input-type <type>  Alias for --type
   -o, --output <path>      Output path for generated SKILL.md (default: out/SKILL.md)
       --server-url <url>   Override/inject API base URL for generated skills
       --dry-run            Run generation without writing output files
@@ -74,10 +77,12 @@ Options:
 
 const GENERATE_SEGMENTED_USAGE = `
 Usage:
-  ${APP_NAME} generate-segmented --input <path-or-url> [--provider <openai|anthropic>] [--model <id>] [--output-dir <path>] [--dry-run] [--overrides <path>]
+  ${APP_NAME} generate-segmented --input <path-or-url> [--type <openapi>|--input-type <openapi>] [--provider <openai|anthropic>] [--model <id>] [--output-dir <path>] [--dry-run] [--overrides <path>]
 
 Options:
   -i, --input <path>       Path or URL to OpenAPI JSON/YAML source (required)
+      --type <type>        Input type: openapi (default: openapi)
+      --input-type <type>  Alias for --type
       --output-dir <path>  Output directory for segmented skill files (default: out/<api>-skills)
       --server-url <url>   Override/inject API base URL for generated skills
       --parallelism <n>    Number of segments to generate concurrently (default: 3)
@@ -170,7 +175,7 @@ class ProgressRenderer {
 
   update(message: string): void {
     if (!this.interactive) {
-      console.error(`[pipeline] ${message}...`);
+      console.error(`${message}...`);
       return;
     }
 
@@ -226,12 +231,7 @@ class ProgressRenderer {
 
     const marker = PROGRESS_MARKERS[this.step % PROGRESS_MARKERS.length];
     const coloredFrame = style(process.stderr, frame, ANSI.cyan, ANSI.bold);
-    const pipelineLabel = style(
-      process.stderr,
-      `pipeline ${String(this.step).padStart(2, "0")}`,
-      ANSI.gray,
-    );
-    const line = `${coloredFrame} ${marker} ${pipelineLabel} ${this.message}`;
+    const line = `${coloredFrame} ${marker} ${this.message}`;
 
     process.stderr.write(`\r\u001B[2K${line}`);
   }
@@ -247,7 +247,16 @@ function parseLlmProvider(value: string): LlmProvider {
   throw new Error(`Invalid --provider value: ${value}. Supported providers: openai, anthropic`);
 }
 
+function parseInputType(value: string): InputType {
+  if (value === "openapi") {
+    return value;
+  }
+
+  throw new Error(`Invalid --type/--input-type value: ${value}. Supported values: openapi`);
+}
+
 function parseGenerateArgs(argv: string[]): ParsedGenerateCommandOptions {
+  let inputType: InputType = "openapi";
   let inputPath: string | undefined;
   let outputPath: string | undefined;
   let serverUrl: string | undefined;
@@ -271,6 +280,16 @@ function parseGenerateArgs(argv: string[]): ParsedGenerateCommandOptions {
           throw new Error("Missing value for --input");
         }
         inputPath = value;
+        index += 1;
+        break;
+      }
+      case "--type":
+      case "--input-type": {
+        const value = argv[index + 1];
+        if (!value) {
+          throw new Error("Missing value for --type/--input-type");
+        }
+        inputType = parseInputType(value);
         index += 1;
         break;
       }
@@ -369,6 +388,7 @@ function parseGenerateArgs(argv: string[]): ParsedGenerateCommandOptions {
   }
 
   return {
+    inputType,
     inputPath,
     outputPath,
     serverUrl,
@@ -384,6 +404,7 @@ function parseGenerateArgs(argv: string[]): ParsedGenerateCommandOptions {
 }
 
 function parseGenerateSegmentedArgs(argv: string[]): ParsedGenerateSegmentedCommandOptions {
+  let inputType: InputType = "openapi";
   let inputPath: string | undefined;
   let outputDir: string | undefined;
   let serverUrl: string | undefined;
@@ -408,6 +429,16 @@ function parseGenerateSegmentedArgs(argv: string[]): ParsedGenerateSegmentedComm
           throw new Error("Missing value for --input");
         }
         inputPath = value;
+        index += 1;
+        break;
+      }
+      case "--type":
+      case "--input-type": {
+        const value = argv[index + 1];
+        if (!value) {
+          throw new Error("Missing value for --type/--input-type");
+        }
+        inputType = parseInputType(value);
         index += 1;
         break;
       }
@@ -518,6 +549,7 @@ function parseGenerateSegmentedArgs(argv: string[]): ParsedGenerateSegmentedComm
   }
 
   return {
+    inputType,
     inputPath,
     outputDir,
     serverUrl,
@@ -736,6 +768,7 @@ async function main(): Promise<void> {
     const options = parseGenerateArgs(argv);
     const llmSelection = await resolveLlmSelection(options);
     const result = await generateSkill({
+      inputType: options.inputType,
       inputPath: options.inputPath,
       outputPath: options.outputPath,
       serverUrl: options.serverUrl,
@@ -797,6 +830,7 @@ async function main(): Promise<void> {
     const options = parseGenerateSegmentedArgs(argv);
     const llmSelection = await resolveLlmSelection(options);
     const result = await generateSegmentedSkill({
+      inputType: options.inputType,
       inputPath: options.inputPath,
       outputDir: options.outputDir,
       serverUrl: options.serverUrl,

@@ -105,6 +105,39 @@ test("fails when --model is missing", () => {
   );
 });
 
+test("fails when --type is unsupported", () => {
+  assert.throws(
+    () =>
+      runCli([
+        "generate",
+        "--input",
+        path.join("test", "fixtures", "one-op.openapi.json"),
+        "--type",
+        "graphql",
+        "--dry-run",
+      ]),
+    /Invalid --type\/--input-type value/,
+  );
+});
+
+test("accepts --input-type alias", () => {
+  const output = runCli(
+    [
+      "generate",
+      "--input",
+      path.join("test", "fixtures", "one-op.openapi.json"),
+      "--input-type",
+      "openapi",
+      "--dry-run",
+    ],
+    {
+      mockResponse: readFileSync(path.join(repoRoot, "test", "golden", "one-op.SKILL.md"), "utf8"),
+    },
+  );
+
+  assert.match(output, /### `create_club`/);
+});
+
 test("uses cached provider/model when flags are omitted", () => {
   const configPath = path.join(
     mkdtempSync(path.join(os.tmpdir(), "skillsmith-config-")),
