@@ -44,24 +44,33 @@ test("secret-leak: Authorization header with real value is detected", () => {
 });
 
 test("secret-leak: Authorization header with placeholder is not flagged", () => {
-  const markdown =
-    'curl -H "Authorization: Bearer $BEARER_TOKEN" "https://api.example.com"';
+  const markdown = 'curl -H "Authorization: Bearer $BEARER_TOKEN" "https://api.example.com"';
   const diagnostics = validateNoSecretLeaks(markdown);
   assert.equal(diagnostics.length, 0);
 });
 
 test("secret-leak: x-api-key header with real value is detected", () => {
-  const markdown =
-    'curl -H "x-api-key: my-secret-api-key-value-here" "https://api.example.com"';
+  const markdown = 'curl -H "x-api-key: my-secret-api-key-value-here" "https://api.example.com"';
   const diagnostics = validateNoSecretLeaks(markdown);
   assert.ok(diagnostics.some((d) => d.code === "OUTPUT_SECRET_HEADER_LITERAL"));
 });
 
 test("secret-leak: x-api-key header with placeholder is not flagged", () => {
-  const markdown =
-    'curl -H "x-api-key: $API_KEY" "https://api.example.com"';
+  const markdown = 'curl -H "x-api-key: $API_KEY" "https://api.example.com"';
   const diagnostics = validateNoSecretLeaks(markdown);
   assert.equal(diagnostics.length, 0);
+});
+
+test("secret-leak: basic auth URL with literal username and placeholder password is not flagged", () => {
+  const markdown = 'curl "https://admin:$API_PASSWORD@api.example.com/secure"';
+  const diagnostics = validateNoSecretLeaks(markdown);
+  assert.equal(diagnostics.length, 0);
+});
+
+test("secret-leak: basic auth URL with literal password is detected", () => {
+  const markdown = 'curl "https://$API_USERNAME:real-password-123@api.example.com/secure"';
+  const diagnostics = validateNoSecretLeaks(markdown);
+  assert.ok(diagnostics.some((d) => d.code === "OUTPUT_SECRET_HEADER_LITERAL"));
 });
 
 test("secret-leak: detects GitHub token pattern", () => {
@@ -85,17 +94,16 @@ test("secret-leak: clean markdown produces no diagnostics", () => {
     "## Operations",
     "",
     "### `list_items`",
-    '```bash',
+    "```bash",
     'curl -H "Authorization: Bearer $API_TOKEN" "https://api.example.com/items"',
-    '```',
+    "```",
   ].join("\n");
   const diagnostics = validateNoSecretLeaks(markdown);
   assert.equal(diagnostics.length, 0);
 });
 
 test("secret-leak: placeholder YOUR_API_KEY is not flagged", () => {
-  const markdown =
-    'curl -H "Authorization: Bearer YOUR_API_KEY" "https://api.example.com"';
+  const markdown = 'curl -H "Authorization: Bearer YOUR_API_KEY" "https://api.example.com"';
   const diagnostics = validateNoSecretLeaks(markdown);
   assert.equal(diagnostics.length, 0);
 });

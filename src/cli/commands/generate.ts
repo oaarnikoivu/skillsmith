@@ -2,11 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { generateSkill } from "@/pipeline/generate-skill";
 import { ProgressRenderer, formatLevelLine, printDiagnostics } from "@/cli/progress";
-import {
-  GENERATE_USAGE,
-  parseGenerateArgs,
-  resolveLlmSelection,
-} from "@/cli/parse-args";
+import { GENERATE_USAGE, parseGenerateArgs, resolveLlmSelection } from "@/cli/parse-args";
 
 const DEFAULT_OUTPUT_PATH = "out/SKILL.md";
 

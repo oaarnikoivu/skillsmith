@@ -18,18 +18,12 @@ export type LogLevel = "success" | "warning" | "error";
 
 function emojiEnabled(stream: NodeJS.WriteStream): boolean {
   return (
-    stream.isTTY &&
-    process.env.SKILLSMITH_PLAIN !== "1" &&
-    process.env.SKILLSMITH_NO_EMOJI !== "1"
+    stream.isTTY && process.env.SKILLSMITH_PLAIN !== "1" && process.env.SKILLSMITH_NO_EMOJI !== "1"
   );
 }
 
 function colorEnabled(stream: NodeJS.WriteStream): boolean {
-  return (
-    stream.isTTY &&
-    process.env.NO_COLOR === undefined &&
-    process.env.SKILLSMITH_PLAIN !== "1"
-  );
+  return stream.isTTY && process.env.NO_COLOR === undefined && process.env.SKILLSMITH_PLAIN !== "1";
 }
 
 function style(stream: NodeJS.WriteStream, text: string, ...codes: string[]): string {
@@ -40,7 +34,11 @@ function style(stream: NodeJS.WriteStream, text: string, ...codes: string[]): st
   return `${codes.join("")}${text}${ANSI.reset}`;
 }
 
-export function formatLevelLine(stream: NodeJS.WriteStream, level: LogLevel, message: string): string {
+export function formatLevelLine(
+  stream: NodeJS.WriteStream,
+  level: LogLevel,
+  message: string,
+): string {
   if (!stream.isTTY || process.env.SKILLSMITH_PLAIN === "1") {
     return message;
   }
@@ -55,9 +53,7 @@ export function formatLevelLine(stream: NodeJS.WriteStream, level: LogLevel, mes
 
 export class ProgressRenderer {
   private readonly interactive =
-    process.stderr.isTTY &&
-    process.env.SKILLSMITH_PLAIN !== "1" &&
-    process.env.TERM !== "dumb";
+    process.stderr.isTTY && process.env.SKILLSMITH_PLAIN !== "1" && process.env.TERM !== "dumb";
 
   private spinnerTimer: NodeJS.Timeout | undefined;
   private frameIndex = 0;

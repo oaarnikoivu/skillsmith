@@ -95,7 +95,11 @@ test("schema-closure: schema referenced in requestBody schemaSummary is included
 
   const operations = [
     makeOperation({
-      requestBody: { required: true, contentTypes: ["application/json"], schemaSummary: "CreateInput" },
+      requestBody: {
+        required: true,
+        contentTypes: ["application/json"],
+        schemaSummary: "CreateInput",
+      },
     }),
   ];
 

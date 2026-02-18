@@ -175,9 +175,7 @@ test("buildIR: path-level parameters are merged with operation-level", () => {
       info: { title: "Test", version: "1.0.0" },
       paths: {
         "/items/{itemId}": {
-          parameters: [
-            { name: "itemId", in: "path", required: true, schema: { type: "string" } },
-          ],
+          parameters: [{ name: "itemId", in: "path", required: true, schema: { type: "string" } }],
           get: {
             operationId: "get_item",
             parameters: [

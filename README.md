@@ -1,8 +1,8 @@
 # skillsmith
 
 [![CI](https://github.com/oaarnikoivu/skillsmith/actions/workflows/ci.yml/badge.svg)](https://github.com/oaarnikoivu/skillsmith/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/%40aarnio%2Fskillsmith.svg)](https://www.npmjs.com/package/@aarnio/skillsmith)
-[![license](https://img.shields.io/npm/l/%40aarnio%2Fskillsmith.svg)](./LICENSE)
+[![npm version](https://img.shields.io/npm/v/%40oaarnikoivu%2Fskillsmith.svg)](https://www.npmjs.com/package/@oaarnikoivu/skillsmith)
+[![license](https://img.shields.io/npm/l/%40oaarnikoivu%2Fskillsmith.svg)](./LICENSE)
 
 Generate agent-ready `SKILL.md` files from API specs.
 
@@ -22,14 +22,14 @@ Generate agent-ready `SKILL.md` files from API specs.
 ### Global
 
 ```bash
-npm install -g @aarnio/skillsmith
+npm install -g @oaarnikoivu/skillsmith
 skillsmith --help
 ```
 
 ### One-off with npx
 
 ```bash
-npx @aarnio/skillsmith@latest --help
+npx @oaarnikoivu/skillsmith@latest --help
 ```
 
 ### Requirements

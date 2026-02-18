@@ -1,10 +1,10 @@
 # Publish to npm (Runbook)
 
-This project publishes as a scoped package: `@aarnio/skillsmith`.
+This project publishes as a scoped package: `@oaarnikoivu/skillsmith`.
 
 ## Prerequisites
 
-1. npm account with publish access to scope `@aarnio`
+1. npm account with publish access to scope `@oaarnikoivu`
 2. Logged in locally:
 
 ```bash
@@ -16,13 +16,13 @@ npm whoami || npm login
 Check your scope access:
 
 ```bash
-npm access ls-packages aarnio
+npm access ls-packages oaarnikoivu
 ```
 
 Check whether package name already exists:
 
 ```bash
-npm view @aarnio/skillsmith
+npm view @oaarnikoivu/skillsmith
 ```
 
 - If this returns `404`, name is available.
@@ -33,7 +33,9 @@ npm view @aarnio/skillsmith
 From repo root:
 
 ```bash
+pnpm format:check
 pnpm lint
+pnpm typecheck
 pnpm test
 ```
 
@@ -51,7 +53,7 @@ Then test-install that tarball in an isolated temp project:
 mkdir -p /tmp/skillsmith-pack-test
 cd /tmp/skillsmith-pack-test
 pnpm init
-pnpm add /absolute/path/to/aarnio-skillsmith-<version>.tgz
+pnpm add /absolute/path/to/oaarnikoivu-skillsmith-<version>.tgz
 pnpm exec skillsmith --help
 ```
 
@@ -71,22 +73,23 @@ Notes:
 ## 4) Verify publish
 
 ```bash
-npm view @aarnio/skillsmith version
-npx @aarnio/skillsmith@latest --help
+npm view @oaarnikoivu/skillsmith version
+npx @oaarnikoivu/skillsmith@latest --help
 ```
 
 ## 5) Install/use
 
 ```bash
-npm install -g @aarnio/skillsmith
+npm install -g @oaarnikoivu/skillsmith
 skillsmith --help
 ```
 
 ## Common failure fixes
 
 1. Auth/permission errors:
+
 - Re-run `npm login`
-- Verify you have permission for scope `@aarnio`
+- Verify you have permission for scope `@oaarnikoivu`
 
 If npm fails with cache permission errors (for example `EPERM` under `~/.npm/_cacache`), fix ownership and retry:
 
@@ -95,6 +98,7 @@ sudo chown -R $(id -u):$(id -g) ~/.npm
 ```
 
 2. Version already exists:
+
 - Bump version in package.json:
 
 ```bash
@@ -106,4 +110,5 @@ git push --tags
 Then publish again.
 
 3. 2FA-required publish:
+
 - npm may ask for OTP in CLI; enter current code and retry.

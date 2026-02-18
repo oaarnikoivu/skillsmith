@@ -9,8 +9,9 @@ const PRIVATE_KEY_PATTERN = /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----/g;
 const AUTHORIZATION_HEADER_PATTERN =
   /authorization\s*:\s*bearer\s+(?:"([^"]+)"|'([^']+)'|`([^`]+)`|([^\s"'`]+))/gi;
 const API_KEY_HEADER_PATTERN = /x-api-key\s*:\s*(?:"([^"]+)"|'([^']+)'|`([^`]+)`|([^\s"'`]+))/gi;
-const BASIC_AUTH_PATTERN =
-  /(?:https?:\/\/)([^:\s/]+):([^@\s/]+)@|authorization\s*:\s*basic\s+(?:"([^"]+)"|'([^']+)'|`([^`]+)`|([^\s"'`]+))/gi;
+const BASIC_AUTH_URL_PATTERN = /(?:https?:\/\/)([^:\s/]+):([^@\s/]+)@/gi;
+const BASIC_AUTH_HEADER_PATTERN =
+  /authorization\s*:\s*basic\s+(?:"([^"]+)"|'([^']+)'|`([^`]+)`|([^\s"'`]+))/gi;
 
 const DEFAULT_ENV_SECRET_NAMES = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"] as const;
 
@@ -115,6 +116,22 @@ function addHeaderLiteralDiagnostics(
   }
 }
 
+function addBasicAuthUrlDiagnostics(markdown: string, diagnostics: Diagnostic[]): void {
+  const matches = markdown.matchAll(BASIC_AUTH_URL_PATTERN);
+  for (const match of matches) {
+    const password = match[2];
+    if (!password || isPlaceholderLike(password)) {
+      continue;
+    }
+
+    diagnostics.push({
+      level: "error",
+      code: "OUTPUT_SECRET_HEADER_LITERAL",
+      message: `Rendered markdown contains a literal credential in "basic authentication" (${redactedPreview(password)}). Use a placeholder instead.`,
+    });
+  }
+}
+
 function addEnvSecretMatchDiagnostics(markdown: string, diagnostics: Diagnostic[]): void {
   const envNames = envSecretNamesFromConfig();
   for (const envName of envNames) {
@@ -182,7 +199,13 @@ export function validateNoSecretLeaks(markdown: string): Diagnostic[] {
 
   addHeaderLiteralDiagnostics(markdown, diagnostics, AUTHORIZATION_HEADER_PATTERN, "Authorization");
   addHeaderLiteralDiagnostics(markdown, diagnostics, API_KEY_HEADER_PATTERN, "x-api-key");
-  addHeaderLiteralDiagnostics(markdown, diagnostics, BASIC_AUTH_PATTERN, "basic authentication");
+  addBasicAuthUrlDiagnostics(markdown, diagnostics);
+  addHeaderLiteralDiagnostics(
+    markdown,
+    diagnostics,
+    BASIC_AUTH_HEADER_PATTERN,
+    "basic authentication",
+  );
   addEnvSecretMatchDiagnostics(markdown, diagnostics);
 
   return dedupeDiagnostics(diagnostics);

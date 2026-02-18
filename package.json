@@ -1,5 +1,5 @@
 {
-  "name": "@aarnio/skillsmith",
+  "name": "@oaarnikoivu/skillsmith",
   "version": "0.1.0",
   "description": "CLI for converting OpenAPI specs into SKILL.md files",
   "private": false,
@@ -13,7 +13,8 @@
   ],
   "scripts": {
     "dev": "tsx src/cli.ts",
-    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json --resolve-full-paths --resolve-full-extension .js",
+    "clean": "node -e \"const fs=require('node:fs'); fs.rmSync('dist', { recursive: true, force: true });\"",
+    "build": "pnpm clean && tsc -p tsconfig.json && tsc-alias -p tsconfig.json --resolve-full-paths --resolve-full-extension .js",
     "test": "pnpm build && node --test test/*.test.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -21,7 +22,7 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "prepack": "pnpm build",
-    "prepublishOnly": "pnpm lint && pnpm test"
+    "prepublishOnly": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"
   },
   "keywords": [
     "openapi",
