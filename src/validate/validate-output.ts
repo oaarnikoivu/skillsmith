@@ -1,10 +1,7 @@
 import type { Diagnostic } from "@/types";
 import type { SpecIR } from "@/ir/ir-types";
+import { escapeRegex, requiredSchemasForOperations } from "@/segment/schema-closure";
 import { validateNoSecretLeaks } from "@/validate/secret-leak";
-
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 function extractOperationIdFromHeading(
   headingText: string,
@@ -194,106 +191,6 @@ function documentedAuthSchemesInSection(
   return documented;
 }
 
-function schemasReferencedInSchemaSummary(
-  schemaSummary: string | undefined,
-  schemaNames: readonly string[],
-): Set<string> {
-  const referenced = new Set<string>();
-  if (!schemaSummary) {
-    return referenced;
-  }
-
-  for (const schemaName of schemaNames) {
-    const pattern = new RegExp(`\\b${escapeRegex(schemaName)}\\b`);
-    if (pattern.test(schemaSummary)) {
-      referenced.add(schemaName);
-    }
-  }
-
-  return referenced;
-}
-
-function collectSchemaRefs(
-  schemaNode: unknown,
-  schemaNameSet: ReadonlySet<string>,
-  refs: Set<string>,
-): void {
-  if (Array.isArray(schemaNode)) {
-    for (const value of schemaNode) {
-      collectSchemaRefs(value, schemaNameSet, refs);
-    }
-    return;
-  }
-
-  if (typeof schemaNode !== "object" || schemaNode === null) {
-    return;
-  }
-
-  const candidate = schemaNode as Record<string, unknown>;
-  const refValue = typeof candidate.$ref === "string" ? candidate.$ref : undefined;
-  if (refValue) {
-    const refName = refValue.split("/").at(-1);
-    if (refName && schemaNameSet.has(refName)) {
-      refs.add(refName);
-    }
-  }
-
-  for (const value of Object.values(candidate)) {
-    collectSchemaRefs(value, schemaNameSet, refs);
-  }
-}
-
-function requiredSchemas(specIR: SpecIR): Set<string> {
-  const schemaNames = Object.keys(specIR.schemas);
-  const schemaNameSet = new Set(schemaNames);
-  const required = new Set<string>();
-  const queue: string[] = [];
-
-  const pushSummaryReferences = (summary: string | undefined): void => {
-    const refs = schemasReferencedInSchemaSummary(summary, schemaNames);
-    for (const ref of refs) {
-      if (!required.has(ref)) {
-        required.add(ref);
-        queue.push(ref);
-      }
-    }
-  };
-
-  for (const operation of specIR.operations) {
-    for (const parameter of operation.parameters) {
-      pushSummaryReferences(parameter.schemaSummary);
-    }
-
-    pushSummaryReferences(operation.requestBody?.schemaSummary);
-    for (const response of operation.responses) {
-      pushSummaryReferences(response.schemaSummary);
-    }
-  }
-
-  while (queue.length > 0) {
-    const current = queue.shift();
-    if (!current) {
-      continue;
-    }
-
-    const schemaNode = specIR.schemas[current];
-    if (schemaNode === undefined) {
-      continue;
-    }
-
-    const refs = new Set<string>();
-    collectSchemaRefs(schemaNode, schemaNameSet, refs);
-    for (const ref of refs) {
-      if (!required.has(ref)) {
-        required.add(ref);
-        queue.push(ref);
-      }
-    }
-  }
-
-  return required;
-}
-
 export function validateOutput(
   markdown: string,
   specIR: SpecIR,
@@ -419,7 +316,7 @@ export function validateOutput(
     }
   }
 
-  const requiredSchemaSet = requiredSchemas(specIR);
+  const requiredSchemaSet = requiredSchemasForOperations(specIR.operations, specIR.schemas);
   if (requiredSchemaSet.size > 0) {
     const sectionText = schemasSection(markdown);
     if (!sectionText) {

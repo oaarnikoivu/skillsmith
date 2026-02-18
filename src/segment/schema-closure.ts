@@ -1,10 +1,10 @@
 import type { OperationIR } from "@/ir/ir-types";
 
-function escapeRegex(value: string): string {
+export function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function schemasReferencedInSchemaSummary(
+export function schemasReferencedInSchemaSummary(
   schemaSummary: string | undefined,
   schemaNames: readonly string[],
 ): Set<string> {
@@ -23,7 +23,7 @@ function schemasReferencedInSchemaSummary(
   return referenced;
 }
 
-function collectSchemaRefs(
+export function collectSchemaRefs(
   schemaNode: unknown,
   schemaNameSet: ReadonlySet<string>,
   refs: Set<string>,
