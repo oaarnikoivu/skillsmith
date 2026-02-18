@@ -37,6 +37,26 @@ pnpm lint
 pnpm test
 ```
 
+## 2.5) Pre-publish package test (recommended)
+
+Build the exact tarball that npm would publish:
+
+```bash
+pnpm pack
+```
+
+Then test-install that tarball in an isolated temp project:
+
+```bash
+mkdir -p /tmp/skillsmith-pack-test
+cd /tmp/skillsmith-pack-test
+pnpm init
+pnpm add /absolute/path/to/aarnio-skillsmith-<version>.tgz
+pnpm exec skillsmith --help
+```
+
+This verifies the real packaged artifact before public publish.
+
 ## 3) Publish
 
 ```bash
@@ -67,6 +87,12 @@ skillsmith --help
 1. Auth/permission errors:
 - Re-run `npm login`
 - Verify you have permission for scope `@aarnio`
+
+If npm fails with cache permission errors (for example `EPERM` under `~/.npm/_cacache`), fix ownership and retry:
+
+```bash
+sudo chown -R $(id -u):$(id -g) ~/.npm
+```
 
 2. Version already exists:
 - Bump version in package.json:
