@@ -70,7 +70,6 @@ Options:
       --model <id>         LLM model id
       --ignore-config      Do not read provider/model from user config
       --save-config        Save resolved provider/model as user preference
-      --temperature <n>    LLM temperature value
       --max-output-tokens <n>  LLM max output tokens
   -h, --help               Show help for generate command
 `;
@@ -92,7 +91,6 @@ Options:
       --model <id>         LLM model id
       --ignore-config      Do not read provider/model from user config
       --save-config        Save resolved provider/model as user preference
-      --temperature <n>    LLM temperature value
       --max-output-tokens <n>  LLM max output tokens
   -h, --help               Show help for generate-segmented command
 `;
@@ -266,7 +264,6 @@ function parseGenerateArgs(argv: string[]): ParsedGenerateCommandOptions {
   let saveConfig = false;
   let llmProvider: LlmProvider | undefined;
   let llmModel: string | undefined;
-  let llmTemperature: number | undefined;
   let llmMaxOutputTokens: number | undefined;
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -351,19 +348,6 @@ function parseGenerateArgs(argv: string[]): ParsedGenerateCommandOptions {
         index += 1;
         break;
       }
-      case "--temperature": {
-        const value = argv[index + 1];
-        if (!value) {
-          throw new Error("Missing value for --temperature");
-        }
-        const parsed = Number(value);
-        if (!Number.isFinite(parsed)) {
-          throw new Error(`Invalid --temperature value: ${value}`);
-        }
-        llmTemperature = parsed;
-        index += 1;
-        break;
-      }
       case "--max-output-tokens": {
         const value = argv[index + 1];
         if (!value) {
@@ -398,7 +382,6 @@ function parseGenerateArgs(argv: string[]): ParsedGenerateCommandOptions {
     overridesPath,
     llmProvider,
     llmModel,
-    llmTemperature,
     llmMaxOutputTokens,
   };
 }
@@ -415,7 +398,6 @@ function parseGenerateSegmentedArgs(argv: string[]): ParsedGenerateSegmentedComm
   let saveConfig = false;
   let llmProvider: LlmProvider | undefined;
   let llmModel: string | undefined;
-  let llmTemperature: number | undefined;
   let llmMaxOutputTokens: number | undefined;
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -512,19 +494,6 @@ function parseGenerateSegmentedArgs(argv: string[]): ParsedGenerateSegmentedComm
         index += 1;
         break;
       }
-      case "--temperature": {
-        const value = argv[index + 1];
-        if (!value) {
-          throw new Error("Missing value for --temperature");
-        }
-        const parsed = Number(value);
-        if (!Number.isFinite(parsed)) {
-          throw new Error(`Invalid --temperature value: ${value}`);
-        }
-        llmTemperature = parsed;
-        index += 1;
-        break;
-      }
       case "--max-output-tokens": {
         const value = argv[index + 1];
         if (!value) {
@@ -560,7 +529,6 @@ function parseGenerateSegmentedArgs(argv: string[]): ParsedGenerateSegmentedComm
     overridesPath,
     llmProvider,
     llmModel,
-    llmTemperature,
     llmMaxOutputTokens,
   };
 }
@@ -776,7 +744,6 @@ async function main(): Promise<void> {
       overridesPath: options.overridesPath,
       llmProvider: llmSelection.provider,
       llmModel: llmSelection.model,
-      llmTemperature: options.llmTemperature,
       llmMaxOutputTokens: options.llmMaxOutputTokens,
       onProgress: printProgress,
     });
@@ -839,7 +806,6 @@ async function main(): Promise<void> {
       overridesPath: options.overridesPath,
       llmProvider: llmSelection.provider,
       llmModel: llmSelection.model,
-      llmTemperature: options.llmTemperature,
       llmMaxOutputTokens: options.llmMaxOutputTokens,
       onProgress: printProgress,
     });

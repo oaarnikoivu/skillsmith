@@ -15,7 +15,6 @@ export interface LlmRequest {
   provider: LlmProvider;
   system?: string;
   model: string;
-  temperature?: number;
   maxOutputTokens?: number;
   apiKey?: string;
 }
@@ -70,14 +69,6 @@ function nextMockResponse(): string | undefined {
   return undefined;
 }
 
-function supportsTemperature(provider: LlmProvider, modelId: string): boolean {
-  if (provider !== "openai") {
-    return true;
-  }
-
-  return !/^(gpt-5|o1|o3|o4)/i.test(modelId);
-}
-
 export async function generateDraftWithLlm(request: LlmRequest): Promise<LlmResponse> {
   const mockResponse = nextMockResponse();
   if (typeof mockResponse === "string") {
@@ -111,13 +102,10 @@ export async function generateDraftWithLlm(request: LlmRequest): Promise<LlmResp
     model = provider(modelId);
   }
 
-  const shouldSetTemperature =
-    request.temperature !== undefined && supportsTemperature(providerName, modelId);
   const response = await generateText({
     model,
     system: request.system,
     prompt: request.prompt,
-    ...(shouldSetTemperature ? { temperature: request.temperature } : {}),
     maxOutputTokens: request.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
   });
 

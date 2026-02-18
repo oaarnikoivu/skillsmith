@@ -18,7 +18,6 @@ export interface GenerateCommandOptions {
   overridesPath?: string;
   llmProvider: LlmProvider;
   llmModel: string;
-  llmTemperature?: number;
   llmMaxOutputTokens?: number;
   onProgress?: (message: string) => void;
 }
@@ -38,7 +37,6 @@ export interface GenerateSegmentedCommandOptions {
   overridesPath?: string;
   llmProvider: LlmProvider;
   llmModel: string;
-  llmTemperature?: number;
   llmMaxOutputTokens?: number;
   onProgress?: (message: string) => void;
 }

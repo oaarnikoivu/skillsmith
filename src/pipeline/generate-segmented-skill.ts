@@ -204,7 +204,6 @@ export async function generateSegmentedSkill(
     provider,
     system: "You are a technical writer creating precise SKILL.md docs for API agent tooling.",
     model,
-    temperature: options.llmTemperature,
     maxOutputTokens: options.llmMaxOutputTokens,
     apiKey,
   };

@@ -106,7 +106,6 @@ Common options:
 - `--output <path>`
 - `--overrides <path>`
 - `--dry-run`
-- `--temperature <n>`
 - `--max-output-tokens <n>`
 
 Tip: if your API is large or generated output gets truncated, increase `--max-output-tokens` (for example `9000` to `16000`, depending on model limits).
@@ -129,7 +128,6 @@ Common options:
 - `--parallelism <n>`
 - `--overrides <path>`
 - `--dry-run`
-- `--temperature <n>`
 - `--max-output-tokens <n>`
 
 Tip: segmented mode also benefits from higher `--max-output-tokens` when segments still contain many operations/schemas.
