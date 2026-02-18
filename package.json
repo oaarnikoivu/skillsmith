@@ -31,12 +31,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oaarnikoivu/openapi-to-skillmd.git"
+    "url": "git+https://github.com/oaarnikoivu/skillsmith.git"
   },
   "bugs": {
-    "url": "https://github.com/oaarnikoivu/openapi-to-skillmd/issues"
+    "url": "https://github.com/oaarnikoivu/skillsmith/issues"
   },
-  "homepage": "https://github.com/oaarnikoivu/openapi-to-skillmd#readme",
+  "homepage": "https://github.com/oaarnikoivu/skillsmith#readme",
   "license": "MIT",
   "engines": {
     "node": ">=20"
