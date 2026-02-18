@@ -1,67 +1,89 @@
 # Release Workflow Runbook
 
-This project should use a release workflow that runs on git tag pushes (for example `v1.2.3`).
+This repository publishes `@oaarnikoivu/skillsmith` from `.github/workflows/release.yml`.
 
-## Required release steps
+## Trigger
 
-1. Trigger on tag push:
+- Workflow trigger: tag push matching `v*.*.*`
+- Example: `v0.1.0`
 
-- Pattern: `v*.*.*`
+## One-time setup
 
-2. Re-run quality gates in release context:
+1. Add repository secret `NPM_TOKEN` in GitHub Actions settings.
+2. Ensure `package.json` metadata points to this repo:
 
-- `pnpm install --frozen-lockfile`
-- `pnpm format:check`
-- `pnpm lint`
-- `pnpm typecheck`
-- `pnpm test`
+- `repository.url`
+- `bugs.url`
+- `homepage`
 
-3. Build package:
+## Release steps
 
-- `pnpm build`
+1. Run local checks:
 
-4. Validate version/tag match:
+```bash
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+```
 
-- Compare tag version (without `v`) with `package.json` `version`
-- Fail if mismatch
+2. Bump version (or manually edit `package.json`):
 
-5. Publish to npm:
+```bash
+npm version patch
+```
 
-- `npm publish --access public --provenance`
-- Use `NPM_TOKEN` from GitHub Actions secrets
+3. Push commit and tag:
 
-6. Create GitHub Release:
+```bash
+git push origin main --follow-tags
+```
 
-- Create release for the tag
-- Include release notes/changelog summary
+Alternative if tag was created manually:
 
-7. Attach package artifact:
+```bash
+git push origin main
+git push origin vX.Y.Z
+```
 
-- Run `pnpm pack`
-- Upload generated `.tgz` to the GitHub Release assets
+4. Verify the `Release` workflow run in GitHub Actions.
 
-## Required GitHub secrets
+## What the workflow does
 
-- `NPM_TOKEN`: npm automation token with publish access for the package
+1. Installs dependencies with `pnpm install --frozen-lockfile`.
+2. Runs `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`.
+3. Verifies tag version matches `package.json` version.
+4. Blocks duplicate versions already on npm.
+5. Builds tarball with `pnpm pack`.
+6. Publishes package:
 
-## Recommended permissions
+- Public repo: `npm publish --access public --provenance`
+- Private repo: `npm publish --access public` (no provenance)
 
-- `contents: write` (for creating release)
-- `id-token: write` (for npm provenance)
+7. Creates GitHub Release and uploads the `.tgz` artifact.
 
-## Optional safeguards (recommended)
+## Troubleshooting
 
-1. Prevent duplicate publishes:
+1. Workflow did not trigger:
 
-- Check if version already exists: `npm view @oaarnikoivu/skillsmith@<version>`
-- Skip/fail publish if already present
+- Confirm you pushed a tag like `v0.1.0`.
+- Confirm `.github/workflows/release.yml` exists in the tagged commit.
+- Re-push tag if needed:
 
-2. Manual release dry-run mode:
+```bash
+git push origin :refs/tags/v0.1.0
+git push origin v0.1.0
+```
 
-- Add `workflow_dispatch`
-- Allow draft release flow without `npm publish`
+2. `E422` provenance repository mismatch:
 
-3. Keep least privilege:
+- Update `package.json` repo metadata to match the actual GitHub repo URL.
 
-- Use minimal job permissions
-- Scope secrets only to release workflow
+3. `E422` provenance unsupported for private repo:
+
+- Private repos cannot publish with provenance.
+- The workflow already falls back to plain `npm publish` for private repos.
+
+4. Version already exists on npm:
+
+- Bump version and publish a new tag. Do not reuse a published version.

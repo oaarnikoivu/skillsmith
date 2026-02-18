@@ -68,7 +68,8 @@ npm publish --access public
 Notes:
 
 - Package uses `prepack`, so build runs automatically before publish.
-- Package uses `prepublishOnly`, so lint/test run automatically as publish gate.
+- Package uses `prepublishOnly`, so format/lint/typecheck/test run automatically as publish gate.
+- If this repository is private, do not use `--provenance` for manual local publish.
 
 ## 4) Verify publish
 
@@ -108,6 +109,8 @@ git push --tags
 ```
 
 Then publish again.
+
+Published versions are immutable in normal flows, so do not try to reuse an already published version number.
 
 3. 2FA-required publish:
 

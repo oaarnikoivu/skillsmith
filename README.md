@@ -197,6 +197,7 @@ Use placeholders in generated docs (for example `$API_KEY`, `$BEARER_TOKEN`) and
 - Publish guide: `docs/publish-npm.md`
 - Release workflow guide: `docs/release.md`
 - FastAPI auth example fixture: `examples/fastapi_auth_demo/README.md`
+- Sample generated segmented output: `examples/city-transit-control-api-skills/`
 
 ## Development
 
